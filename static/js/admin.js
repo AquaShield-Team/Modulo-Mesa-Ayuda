@@ -2647,7 +2647,60 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   setInterval(pollNotifications, 4000);
-  pollNotifications();
+  // ── Gestión de Bandeja de Espera (GitHub Queue) ─────────────────────────
+  const btnSyncQueue = document.getElementById("btnSyncQueue");
+  const queueBadgeCount = document.getElementById("queueBadgeCount");
+
+  async function checkQueueStatus() {
+    try {
+      const res = await fetch(API_BASE + "/api/queue/status");
+      const data = await res.json();
+      if (queueBadgeCount) {
+        queueBadgeCount.textContent = data.count || 0;
+        if (btnSyncQueue) {
+          if (data.count > 0) {
+            btnSyncQueue.style.fontWeight = "bold";
+            btnSyncQueue.style.boxShadow = "0 0 8px rgba(235, 95, 10, 0.4)";
+          } else {
+            btnSyncQueue.style.fontWeight = "normal";
+            btnSyncQueue.style.boxShadow = "none";
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (btnSyncQueue) {
+    btnSyncQueue.addEventListener("click", async () => {
+      btnSyncQueue.disabled = true;
+      btnSyncQueue.innerHTML = "<span>⏳ Sincronizando...</span>";
+      try {
+        const res = await fetch(API_BASE + "/api/queue/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ author: "Admin" })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ Sincronización completa: Se procesaron ${data.synced} requerimientos desde la bandeja de espera.`);
+          checkQueueStatus();
+          loadTickets(true);
+          loadKPIs();
+        } else {
+          alert("Aviso al sincronizar: " + (data.error || "No se pudo sincronizar"));
+        }
+      } catch (err) {
+        alert("Error de conexión al sincronizar la cola");
+      } finally {
+        btnSyncQueue.disabled = false;
+        btnSyncQueue.innerHTML = `<span>🔄 Sincronizar Cola (<span id="queueBadgeCount">0</span>)</span>`;
+        checkQueueStatus();
+      }
+    });
+  }
+
+  setInterval(checkQueueStatus, 30000);
+  checkQueueStatus();
 
   // ── Inicialización ───────────────────────────────────────────────────────
   if (adminSearchInput) {

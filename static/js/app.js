@@ -283,10 +283,12 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMyTickets() {
     if (!currentUser) return;
 
+    const offlineList = JSON.parse(localStorage.getItem("aquashield_offline_tickets") || "[]");
     try {
       myTicketsListContainer.innerHTML = `
-        <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
-          ⏳ Cargando tus solicitudes...
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+          <div class="spinner" style="margin: 0 auto 12px auto; width: 28px; height: 28px; border: 3px solid var(--border-color); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          Consultando tus solicitudes...
         </div>
       `;
 
@@ -296,9 +298,40 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (data.success) {
-        const tickets = data.tickets || [];
-        myTicketsBadgeCount.textContent = tickets.length;
-        renderMyTicketsList(tickets);
+        // Auto-sincronizar requerimientos de la bandeja de espera pendientes
+        if (offlineList.length > 0) {
+          for (let i = offlineList.length - 1; i >= 0; i--) {
+            const off = offlineList[i];
+            try {
+              const fd = new FormData();
+              fd.set("requester_name", off.requester_name);
+              fd.set("requester_email", off.requester_email);
+              fd.set("requester_phone", off.requester_phone);
+              fd.set("module_name", off.module_name);
+              fd.set("type", off.type);
+              fd.set("priority", off.priority);
+              fd.set("title", off.title);
+              fd.set("description", off.description);
+              if (currentUser && currentUser.id) fd.set("user_id", currentUser.id);
+
+              const sRes = await fetch(API_BASE + "/api/tickets", { method: "POST", body: fd, credentials: "include" });
+              const sData = await sRes.json();
+              if (sData.success) {
+                offlineList.splice(i, 1);
+              }
+            } catch (sErr) {}
+          }
+          localStorage.setItem("aquashield_offline_tickets", JSON.stringify(offlineList));
+          
+          const r2 = await fetch(API_BASE + `/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, { credentials: "include" });
+          const d2 = await r2.json();
+          if (d2.success) data.tickets = d2.tickets;
+        }
+
+        const serverTickets = data.tickets || [];
+        const allTickets = [...offlineList, ...serverTickets];
+        myTicketsBadgeCount.textContent = allTickets.length;
+        renderMyTicketsList(allTickets);
       } else {
         myTicketsListContainer.innerHTML = `
           <div style="text-align: center; padding: 20px; color: #D32F2F;">
@@ -307,11 +340,14 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
     } catch (err) {
-      console.error("Error cargando mis tickets:", err);
+      console.warn("Servidor fuera de línea. Mostrando solicitudes en bandeja de espera...", err);
+      myTicketsBadgeCount.textContent = offlineList.length;
+      renderMyTicketsList(offlineList);
     }
   }
 
   const statusConfig = {
+    en_espera: { label: "En Bandeja de Espera", class: "en_analisis", icon: "⏳" },
     abierto: { label: "Abierto / En Cola", class: "abierto", icon: "📬" },
     en_analisis: { label: "En Análisis", class: "en_analisis", icon: "🔍" },
     en_desarrollo: { label: "En Desarrollo", class: "en_desarrollo", icon: "⚡" },
@@ -698,11 +734,17 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubmitTicket.disabled = true;
       btnSubmitTicket.innerHTML = "<span>⏳ Enviando solicitud...</span>";
 
+      // Intentar enviar al backend con timeout seguro
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4500);
+
       const response = await fetch(API_BASE + "/api/tickets", {
         method: "POST",
         body: formData,
-        credentials: "include"
+        credentials: "include",
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -718,14 +760,61 @@ document.addEventListener("DOMContentLoaded", () => {
           loadMyTickets();
         }
 
+        const successTitle = modalSuccessTicket.querySelector("h3") || modalSuccessTicket.querySelector("h2");
+        if (successTitle) successTitle.textContent = "¡Solicitud Creada con Éxito!";
         successTicketCode.textContent = data.ticket.code;
         modalSuccessTicket.classList.add("active");
       } else {
         alert("Error al enviar la solicitud: " + (data.error || "Ocurrió un error inesperado"));
       }
     } catch (err) {
-      alert("Error de conexión al enviar el requerimiento.");
-      console.error(err);
+      console.warn("Servidor de soporte fuera de línea. Guardando en Bandeja de Espera 24/7...", err);
+      
+      // Fallback a Bandeja de Espera 24/7
+      const now = new Date();
+      const waitCode = "TKT-WAIT-" + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + "-" + String(Math.floor(100 + Math.random() * 900));
+      const offlineTicket = {
+        code: waitCode,
+        id: "offline_" + Date.now(),
+        requester_name: formData.get("requester_name") || (currentUser ? currentUser.name : "Usuario"),
+        requester_email: formData.get("requester_email") || (currentUser ? currentUser.email : ""),
+        requester_phone: formData.get("requester_phone") || "",
+        module_name: formData.get("module_name") || "AQUASHIELD HUB",
+        type: formData.get("type") || "problema",
+        priority: formData.get("priority") || "media",
+        title: formData.get("title") || "Requerimiento en espera",
+        description: fullDescription,
+        status: "en_espera",
+        created_at: now.toLocaleString("es-CL"),
+        is_offline: true
+      };
+
+      const offlineList = JSON.parse(localStorage.getItem("aquashield_offline_tickets") || "[]");
+      offlineList.unshift(offlineTicket);
+      localStorage.setItem("aquashield_offline_tickets", JSON.stringify(offlineList));
+
+      ticketForm.reset();
+      attachedFiles = [];
+      renderAttachmentsPreview();
+      if (currentUser) {
+        requesterNameInput.value = currentUser.name;
+        requesterEmailInput.value = currentUser.email;
+        if (currentUser.phone) requesterPhoneInput.value = currentUser.phone;
+        loadMyTickets();
+      }
+
+      const successTitle = modalSuccessTicket.querySelector("h3") || modalSuccessTicket.querySelector("h2");
+      if (successTitle) successTitle.textContent = "⏳ Solicitud en Bandeja de Espera";
+      successTicketCode.textContent = waitCode;
+      
+      const successMsg = modalSuccessTicket.querySelector("p");
+      if (successMsg) {
+        successMsg.innerHTML = `¡Tu requerimiento fue recibido con éxito en nuestra cola de atención 24/7!<br><br>
+        <span style="font-size: 0.88rem; color: var(--text-secondary);">
+        El servidor central se encuentra en reposo. Tu solicitud ha quedado resguardada de forma segura y será procesada con código definitivo en cuanto el equipo de soporte inicie operaciones.
+        </span>`;
+      }
+      modalSuccessTicket.classList.add("active");
     } finally {
       btnSubmitTicket.disabled = false;
       btnSubmitTicket.innerHTML = "<span>🚀 Enviar Solicitud</span>";

@@ -938,6 +938,26 @@ def pwa_manifest():
 def pwa_service_worker():
     return send_from_directory("static/js", "sw.js", mimetype="application/javascript")
 
+# ── ENDPOINTS DE LA BANDEJA DE ESPERA (GITHUB QUEUE) ────────────────────────
+@app.route("/api/queue/status", methods=["GET"])
+def api_queue_status():
+    try:
+        import sync_github_queue
+        issues = sync_github_queue.fetch_pending_github_issues()
+        return jsonify({"count": len(issues), "issues": issues})
+    except Exception as e:
+        return jsonify({"count": 0, "error": str(e)})
+
+@app.route("/api/queue/sync", methods=["POST"])
+def api_queue_sync():
+    try:
+        import sync_github_queue
+        author = request.json.get("author", "Administrador") if request.is_json else "Administrador"
+        result = sync_github_queue.sync_github_queue_to_db(author=author)
+        return jsonify({"success": True, **result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 def get_local_ip():
     try:
         import socket
