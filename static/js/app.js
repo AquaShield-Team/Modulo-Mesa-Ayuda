@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminNavLink = document.getElementById("adminNavLink");
     if (adminNavLink) {
       adminNavLink.style.display = (isLocalhost || user.role === 'admin') ? 'inline-flex' : 'none';
+      if (IS_GH_PAGES) adminNavLink.href = "admin.html";
     }
 
     // Mostrar banner de autocompletado en el formulario
@@ -147,6 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminNavLink = document.getElementById("adminNavLink");
     if (adminNavLink) {
       adminNavLink.style.display = isLocalhost ? 'inline-flex' : 'none';
+      if (IS_GH_PAGES) adminNavLink.href = "admin.html";
     }
 
     userHeaderArea.innerHTML = `

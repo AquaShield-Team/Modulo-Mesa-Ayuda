@@ -4,6 +4,12 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Configuracion de endpoint API para GitHub Pages vs Local/Cloud
+  const IS_GH_PAGES = window.location.hostname.includes("github.io") || window.location.protocol === "file:";
+  const API_BASE = IS_GH_PAGES 
+    ? (localStorage.getItem("aquashield_api_url") || "https://shots-citizens-sheet-commented.trycloudflare.com")
+    : "";
+
   // ── 1. Modo Oscuro / Claro ──────────────────────────────────────────────
   const themeToggleBtn = document.getElementById("themeToggleBtn");
   const html = document.documentElement;
@@ -581,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── 3. Cargar KPIs y Módulos de Filtro ────────────────────────────────────
   async function loadKPIs() {
     try {
-      const response = await fetch("/api/stats");
+      const response = await fetch(API_BASE + "/api/stats");
       const data = await response.json();
       if (data.success) {
         kpiTotal.textContent = data.stats.total || 0;
@@ -599,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Cargar SLA y CSAT desde analíticas
-      const r2 = await fetch("/api/admin/analytics");
+      const r2 = await fetch(API_BASE + "/api/admin/analytics");
       const d2 = await r2.json();
       if (d2.success && d2.analytics) {
         const a = d2.analytics;
@@ -656,7 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadFilterModules() {
     try {
       const currentSelected = filterModule.value;
-      const response = await fetch("/api/modules");
+      const response = await fetch(API_BASE + "/api/modules");
       const data = await response.json();
       if (data.success) {
         filterModule.innerHTML = '<option value="todos">Todos los Módulos</option>';
@@ -711,7 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
 
-      const response = await fetch(`/api/tickets?${params.toString()}`);
+      const response = await fetch(API_BASE + `/api/tickets?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
@@ -874,7 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       currentActiveTicketId = ticketId;
 
-      const response = await fetch(`/api/tickets/${ticketId}`);
+      const response = await fetch(API_BASE + `/api/tickets/${ticketId}`);
       const data = await response.json();
 
       if (!data.success) {
@@ -1012,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
       modalChatPoller = setInterval(async () => {
         if (modalTicketDetail.classList.contains("active") && currentActiveTicketId) {
           try {
-            const response = await fetch(`/api/tickets/${currentActiveTicketId}/comments?mark_read_for=admin`);
+            const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}/comments?mark_read_for=admin`);
             const data = await response.json();
             if (data.success && data.comments) {
               const prevCount = currentAdminTicketObj && currentAdminTicketObj.comments ? currentAdminTicketObj.comments.length : 0;
@@ -1109,7 +1115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       btnAdminSendComment.disabled = true;
 
-      const response = await fetch(`/api/tickets/${currentActiveTicketId}/comments`, {
+      const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1172,7 +1178,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveTicketChanges.disabled = true;
       btnSaveTicketChanges.textContent = "Guardando...";
 
-      const response = await fetch(`/api/tickets/${currentActiveTicketId}`, {
+      const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1214,7 +1220,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         btnAddTimeLog.disabled = true;
-        const response = await fetch(`/api/tickets/${currentActiveTicketId}/time-logs`, {
+        const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}/time-logs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ minutes: mins, description: desc, author: "Marcelo Ramírez" })
@@ -1344,7 +1350,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         playChimeSound();
-        await fetch(`/api/tickets/${ticketId}`, {
+        await fetch(API_BASE + `/api/tickets/${ticketId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: newStatus, author: "Tablero Kanban" })
@@ -1431,7 +1437,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnTogglePinTicket.addEventListener("click", async () => {
       if (!currentActiveTicketId) return;
       try {
-        const response = await fetch(`/api/tickets/${currentActiveTicketId}/pin`, { method: "POST" });
+        const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}/pin`, { method: "POST" });
         const data = await response.json();
         if (data.success) {
           if (currentAdminTicketObj) currentAdminTicketObj.is_pinned = data.is_pinned;
@@ -1455,7 +1461,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         btnSaveTicketTags.disabled = true;
         btnSaveTicketTags.textContent = "Guardando...";
-        const response = await fetch(`/api/tickets/${currentActiveTicketId}/tags`, {
+        const response = await fetch(API_BASE + `/api/tickets/${currentActiveTicketId}/tags`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tags })
@@ -1508,7 +1514,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      const response = await fetch("/api/modules?all=1");
+      const response = await fetch(API_BASE + "/api/modules?all=1");
       const data = await response.json();
 
       if (data.success) {
@@ -1567,7 +1573,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`/api/modules/${moduleId}`, {
+      const response = await fetch(API_BASE + `/api/modules/${moduleId}`, {
         method: "DELETE"
       });
       const data = await response.json();
@@ -1597,7 +1603,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnAdminCreateModule.disabled = true;
       btnAdminCreateModule.textContent = "Guardando...";
 
-      const response = await fetch("/api/modules", {
+      const response = await fetch(API_BASE + "/api/modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, description })
@@ -1664,7 +1670,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubmitCreateUser.disabled = true;
       btnSubmitCreateUser.textContent = "Guardando...";
 
-      const response = await fetch("/api/admin/users", {
+      const response = await fetch(API_BASE + "/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, department, role, password })
@@ -1694,7 +1700,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAdminUsersList() {
     try {
       const search = adminUserSearchInput.value.trim();
-      const response = await fetch(`/api/admin/users?search=${encodeURIComponent(search)}`);
+      const response = await fetch(API_BASE + `/api/admin/users?search=${encodeURIComponent(search)}`);
       const data = await response.json();
 
       if (data.success) {
@@ -1825,7 +1831,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveResetPassword.disabled = true;
       btnSaveResetPassword.textContent = "Actualizando...";
 
-      const response = await fetch(`/api/admin/users/${currentTargetUserId}/reset-password`, {
+      const response = await fetch(API_BASE + `/api/admin/users/${currentTargetUserId}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_password })
@@ -1883,7 +1889,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveEditUser.disabled = true;
       btnSaveEditUser.textContent = "Guardando...";
 
-      const response = await fetch(`/api/admin/users/${currentTargetUserId}`, {
+      const response = await fetch(API_BASE + `/api/admin/users/${currentTargetUserId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, department, role })
@@ -1911,7 +1917,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
+      const response = await fetch(API_BASE + `/api/admin/users/${user.id}`, {
         method: "DELETE"
       });
       const data = await response.json();
@@ -1951,7 +1957,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadEmailSettings() {
     try {
-      const response = await fetch("/api/admin/settings");
+      const response = await fetch(API_BASE + "/api/admin/settings");
       const data = await response.json();
       if (data.success) {
         const s = data.settings || {};
@@ -1994,7 +2000,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveEmailSettings.disabled = true;
       btnSaveEmailSettings.textContent = "Guardando...";
 
-      const response = await fetch("/api/admin/settings", {
+      const response = await fetch(API_BASE + "/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -2027,7 +2033,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       btnTestEmailConnection.disabled = true;
 
-      const response = await fetch("/api/admin/settings/test-email", {
+      const response = await fetch(API_BASE + "/api/admin/settings/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2074,7 +2080,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadAnalyticsData() {
     try {
-      const response = await fetch("/api/admin/analytics");
+      const response = await fetch(API_BASE + "/api/admin/analytics");
       const data = await response.json();
       if (!data.success || !data.analytics) return;
 
@@ -2350,7 +2356,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         btnSend.disabled = true;
-        const resp = await fetch(`/api/tickets/${ticketId}/comments`, {
+        const resp = await fetch(API_BASE + `/api/tickets/${ticketId}/comments`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2412,7 +2418,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!body) return;
 
     try {
-      const resp = await fetch(`/api/tickets/${ticketId}/comments?mark_read_for=admin`);
+      const resp = await fetch(API_BASE + `/api/tickets/${ticketId}/comments?mark_read_for=admin`);
       const data = await resp.json();
       if (!data.success) return;
 
@@ -2488,7 +2494,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function pollNotifications() {
     try {
-      const response = await fetch("/api/notifications?role=admin");
+      const response = await fetch(API_BASE + "/api/notifications?role=admin");
       const data = await response.json();
       if (!data.success) return;
 
@@ -2554,7 +2560,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = header.getAttribute("data-title");
             notifDropdownMenu.classList.remove("active");
             openFloatingChat(ticketId, code, title);
-            await fetch("/api/notifications/mark-read", {
+            await fetch(API_BASE + "/api/notifications/mark-read", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ticket_id: ticketId, role: "admin" })
@@ -2573,7 +2579,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const notifId = parseInt(item.getAttribute("data-notif-id"));
             notifDropdownMenu.classList.remove("active");
             openFloatingChat(ticketId, code, title);
-            await fetch("/api/notifications/mark-read", {
+            await fetch(API_BASE + "/api/notifications/mark-read", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ notification_id: notifId, role: "admin" })
@@ -2587,7 +2593,7 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.addEventListener("click", async (e) => {
             e.stopPropagation();
             const notifId = parseInt(btn.getAttribute("data-notif-id"));
-            await fetch("/api/notifications/delete", {
+            await fetch(API_BASE + "/api/notifications/delete", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ notification_id: notifId, role: "admin" })
@@ -2601,7 +2607,7 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.addEventListener("click", async (e) => {
             e.stopPropagation();
             const ticketId = parseInt(btn.getAttribute("data-ticket-id"));
-            await fetch("/api/notifications/delete", {
+            await fetch(API_BASE + "/api/notifications/delete", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ticket_id: ticketId, role: "admin" })
@@ -2617,7 +2623,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnNotifClearAll.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (confirm("¿Deseas limpiar las alertas de la campanita? (Esto no borra el ticket ni el historial interno)")) {
-        await fetch("/api/notifications/clear-all", {
+        await fetch(API_BASE + "/api/notifications/clear-all", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ role: "admin" })
