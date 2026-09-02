@@ -28,7 +28,7 @@ print("=" * 70)
 print("\n[*] Estableciendo tunel seguro con Cloudflare...")
 
 proc = subprocess.Popen(
-    [cf_exe, "tunnel", "--url", "http://localhost:5050"],
+    [cf_exe, "tunnel", "--protocol", "http2", "--url", "http://localhost:5050"],
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
     text=True,
