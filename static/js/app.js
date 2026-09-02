@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Configuracion de endpoint API para GitHub Pages vs Local/Cloud
   const IS_GH_PAGES = window.location.hostname.includes("github.io") || window.location.protocol === "file:";
   const API_BASE = IS_GH_PAGES 
-    ? (localStorage.getItem("aquashield_api_url") || "https://composite-divx-css-america.trycloudflare.com")
+    ? (localStorage.getItem("aquashield_api_url") || "https://shots-citizens-sheet-commented.trycloudflare.com")
     : "";
 
   // ── 1. Modo Oscuro / Claro ──────────────────────────────────────────────
