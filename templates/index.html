@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesa de Ayuda · AquaShield | AquaChile</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  
+  <!-- PWA Manifest y Meta Tags Móviles -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#445563">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AquaShield">
+  
+  <!-- Fuentes oficiales AquaChile / AquaShield -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- CABECERA OFICIAL AQUASHIELD (64px) -->
+  <header class="aq-header">
+    <a href="/" class="aq-header-left">
+      <!-- Isotipo oficial AquaChile SVG -->
+      <img src="/static/img/isotipo.svg" alt="AquaChile" class="aq-logo-svg">
+      <div class="aq-brand-platform">
+        <span class="aq-brand-title">AQUASHIELD</span>
+        <span class="aq-brand-sub">by AquaChile</span>
+      </div>
+      <div class="aq-header-divider"></div>
+      <div class="aq-module-tag">
+        <span class="aq-module-label">MÓDULO</span>
+        <span class="aq-module-name">MESA DE AYUDA</span>
+      </div>
+    </a>
+
+    <div class="aq-header-right">
+      <!-- Campanita de Notificaciones -->
+      <div class="notif-bell-container" id="notifBellContainer">
+        <button type="button" class="btn-icon-bell" id="btnToggleNotifMenu" title="Notificaciones de Mensajes">
+          <span>🔔</span>
+          <span class="notif-badge" id="notifBadgeCount" style="display: none;">0</span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdownMenu">
+          <div class="notif-dropdown-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>🔔 Historial de Alertas</span>
+              <span id="notifUnreadLabel" style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700;">0 nuevos</span>
+            </div>
+            <button type="button" class="btn-notif-clear-all" id="btnNotifClearAll" title="Limpiar todas las notificaciones de la campanita">🗑️ Limpiar</button>
+          </div>
+          <div class="notif-list" id="notifItemsList">
+            <div style="padding: 20px; text-align: center; color: var(--text-secondary); font-size: 0.82rem;">No tienes alertas en la campanita</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PERFIL DE USUARIO / BOTÓN INICIAR SESIÓN -->
+      <div id="userHeaderArea">
+        <button type="button" id="btnOpenAuthModal" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem;">
+          <span>👤 Iniciar Sesión / Registrarme</span>
+        </button>
+      </div>
+
+      <a href="/" class="aq-nav-link active">
+        <span>📝 Solicitudes</span>
+      </a>
+      <a href="/admin" class="aq-nav-link" id="adminNavLink" style="display: none;">
+        <span>⚙️ Panel Gestión</span>
+      </a>
+      <button id="themeToggleBtn" class="theme-toggle-btn" title="Alternar Modo Oscuro/Claro">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="aq-container">
+    
+    <div class="aq-hero">
+      <div class="aq-hero-badge">Canal Oficial de Soporte y Desarrollo</div>
+      <h1 class="aq-hero-title">Mesa de Ayuda & Solicitudes AquaShield</h1>
+      <p class="aq-hero-subtitle">
+        Centraliza tus reportes de fallas, solicitudes de mejora y nuevas funcionalidades para todos los módulos operativos. Evita correos o mensajes dispersos.
+      </p>
+    </div>
+
+    <!-- TABS DE NAVEGACIÓN -->
+    <div class="aq-tabs">
+      <button class="aq-tab-btn active" data-tab="tab-nuevo">
+        <span>✨ Nueva Solicitud</span>
+      </button>
+      <button class="aq-tab-btn" data-tab="tab-mis-solicitudes" id="tabBtnMisSolicitudes">
+        <span>📑 Mis Solicitudes (<span id="myTicketsBadgeCount">0</span>)</span>
+      </button>
+      <button class="aq-tab-btn" data-tab="tab-consultar">
+        <span>🔍 Buscar por Código</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: FORMULARIO DE INGRESO -->
+    <div id="tab-nuevo" class="tab-content active">
+      <div class="aq-card">
+        <div class="aq-card-header">
+          <h2 class="aq-card-title">
+            <span>📋 Formulario de Requerimiento</span>
+          </h2>
+          <span style="font-size: 0.82rem; color: var(--text-secondary);">
+            Los campos con <strong style="color: var(--color-accent);">*</strong> son obligatorios
+          </span>
+        </div>
+
+        <!-- Banner de Sesión Activa -->
+        <div id="authAutofillBanner" class="user-status-banner" style="display: none;">
+          <div>
+            <span>✅ Sesión guardada como: <strong id="bannerUserName">...</strong> (<span id="bannerUserEmail">...</span>)</span>
+            <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px;">Tus datos se autocompletaron automáticamente. No necesitas escribirlos cada vez.</div>
+          </div>
+          <button type="button" id="btnChangeAccount" style="background: none; border: none; color: var(--color-accent); font-weight: 700; cursor: pointer; font-size: 0.82rem;">Cambiar Cuenta</button>
+        </div>
+
+        <form id="ticketForm" enctype="multipart/form-data">
+          
+          <div class="form-grid">
+            
+            <!-- Nombre Solicitante -->
+            <div class="form-group">
+              <label class="form-label" for="requester_name">
+                <span>Nombre del Solicitante <span class="required">*</span></span>
+              </label>
+              <input type="text" id="requester_name" name="requester_name" class="form-control" placeholder="Ej: Marcelo Ramírez" required>
+            </div>
+
+            <!-- Email Corporativo -->
+            <div class="form-group">
+              <label class="form-label" for="requester_email">
+                <span>Correo Electrónico <span class="required">*</span></span>
+              </label>
+              <input type="email" id="requester_email" name="requester_email" class="form-control" placeholder="ejemplo@aquachile.com" required>
+            </div>
+
+            <!-- Teléfono / WhatsApp (Opcional) -->
+            <div class="form-group">
+              <label class="form-label" for="requester_phone">
+                <span>Teléfono / Anexo / WhatsApp</span>
+              </label>
+              <input type="text" id="requester_phone" name="requester_phone" class="form-control" placeholder="+56 9 1234 5678">
+            </div>
+
+            <!-- Selector de Módulo + Botón Agregar Módulo -->
+            <div class="form-group">
+              <label class="form-label" for="module_select">
+                <span>Módulo Afectado / Relacionado <span class="required">*</span></span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: normal;">¿No está en la lista? Agrégalo</span>
+              </label>
+              <div class="select-with-add">
+                <select id="module_select" name="module_id" class="form-control" required>
+                  <option value="">-- Selecciona un módulo --</option>
+                </select>
+                <button type="button" id="btnOpenNewModuleModal" class="btn-add-module" title="Crear nuevo módulo">
+                  <span>➕ Nuevo</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tipo de Solicitud (Radio Cards) -->
+            <div class="form-group full-width">
+              <label class="form-label">
+                <span>Tipo de Requerimiento <span class="required">*</span></span>
+              </label>
+              <div class="radio-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <label class="radio-card">
+                  <input type="radio" name="type" value="problema" checked>
+                  <div class="radio-card-content">
+                    <span class="radio-card-title">⚠️ Falla / Error del Sistema</span>
+                    <span class="radio-card-desc">El módulo presenta un error, bloqueo o cálculo inesperado.</span>
+                  </div>
+                </label>
+
+                <label class="radio-card">
+                  <input type="radio" name="type" value="solicitud_acceso">
+                  <div class="radio-card-content">
+                    <span class="radio-card-title">🔑 Acceso / Permisos</span>
+                    <span class="radio-card-desc">Solicitud de usuario, rol SAP o acceso a módulos.</span>
+                  </div>
+                </label>
+
+                <label class="radio-card">
+                  <input type="radio" name="type" value="mejora">
+                  <div class="radio-card-content">
+                    <span class="radio-card-title">💡 Solicitud de Mejora</span>
+                    <span class="radio-card-desc">Optimización, cambio visual o ajuste a una función existente.</span>
+                  </div>
+                </label>
+
+                <label class="radio-card">
+                  <input type="radio" name="type" value="consulta">
+                  <div class="radio-card-content">
+                    <span class="radio-card-title">🚀 Nueva Funcionalidad</span>
+                    <span class="radio-card-desc">Nueva capacidad, reporte o integración no existente.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- CONTENEDOR DE CAMPOS DINÁMICOS POR TIPO -->
+            <div id="dynamicFieldsContainer" class="form-group full-width dynamic-fields-container" style="display: none;">
+              <!-- Se inyecta dinámicamente según el tipo seleccionado -->
+            </div>
+
+            <!-- Nivel de Urgencia / Prioridad -->
+            <div class="form-group full-width">
+              <label class="form-label">
+                <span>Nivel de Urgencia / Prioridad <span class="required">*</span></span>
+              </label>
+              <div class="priority-selector">
+                <label class="priority-option">
+                  <input type="radio" name="priority" value="baja" id="prio_baja">
+                  <span class="priority-label">🟢 Baja</span>
+                </label>
+                <label class="priority-option">
+                  <input type="radio" name="priority" value="media" id="prio_media" checked>
+                  <span class="priority-label">🔵 Media</span>
+                </label>
+                <label class="priority-option">
+                  <input type="radio" name="priority" value="alta" id="prio_alta">
+                  <span class="priority-label">🟠 Alta</span>
+                </label>
+                <label class="priority-option">
+                  <input type="radio" name="priority" value="critica" id="prio_critica">
+                  <span class="priority-label">🔴 Crítica / Bloqueante</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Título / Asunto Breve -->
+            <div class="form-group full-width">
+              <label class="form-label" for="title">
+                <span>Asunto Breve <span class="required">*</span></span>
+              </label>
+              <input type="text" id="title" name="title" class="form-control" placeholder="Ej: Error al exportar planilla de embarque en Módulo Congelado" required autocomplete="off">
+              
+              <!-- 🤖 BANNER DE TRIAGE & AUTO-DIAGNÓSTICO INTELIGENTE -->
+              <div id="smartSuggestionsBox" class="triage-banner" style="display: none;">
+                <div class="triage-banner-icon">🤖</div>
+                <div class="triage-banner-body">
+                  <div class="triage-banner-title">Diagnóstico Inteligente AquaShield</div>
+                  <div id="smartSuggestionText" class="triage-banner-text"></div>
+                  <div id="triageActionsArea" class="triage-banner-actions"></div>
+                </div>
+                <button type="button" id="btnCloseSuggestion" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); line-height: 1;" title="Cerrar">&times;</button>
+              </div>
+            </div>
+
+            <!-- Descripción Detallada -->
+            <div class="form-group full-width">
+              <label class="form-label" for="description">
+                <span>Descripción Detallada <span class="required">*</span></span>
+              </label>
+              <textarea id="description" name="description" class="form-control" placeholder="Describe paso a paso el problema ocurrido o el detalle de la solicitud..." required></textarea>
+            </div>
+
+            <!-- Zona de Adjuntos (Drag & Drop + Selector de Archivos) -->
+            <div class="form-group full-width">
+              <label class="form-label">
+                <span>Archivos Adjuntos (PDF, Excel, Word, Imágenes, Logs, ZIP, etc.)</span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: normal;">Puedes subir múltiples archivos</span>
+              </label>
+              
+              <div id="dropzone" class="dropzone-container">
+                <div class="dropzone-icon">📁</div>
+                <div class="dropzone-text">Arrastra y suelta tus archivos aquí o haz clic para examinar</div>
+                <div class="dropzone-hint">
+                  Formatos: .pdf, .xlsx, .docx, .png, .jpg, .zip, .csv (Máx 50MB) · 
+                  <span style="color: var(--color-accent); font-weight: 700;">💡 Presiona Ctrl + V para pegar capturas de pantalla</span>
+                </div>
+                <input type="file" id="fileInput" name="files[]" multiple style="display: none;">
+              </div>
+
+              <!-- Lista de Archivos Seleccionados para Enviar -->
+              <div id="attachmentsPreview" class="attachments-preview-list"></div>
+            </div>
+
+          </div>
+
+          <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="reset" id="btnResetForm" class="btn-secondary">Limpiar Formulario</button>
+            <button type="submit" id="btnSubmitTicket" class="btn-primary">
+              <span>🚀 Enviar Solicitud</span>
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 2: MIS SOLICITUDES (USUARIO LOGUEADO) -->
+    <div id="tab-mis-solicitudes" class="tab-content">
+      <div class="aq-card">
+        <div class="aq-card-header">
+          <h2 class="aq-card-title">
+            <span>📑 Historial de Mis Solicitudes</span>
+          </h2>
+          <button type="button" id="btnRefreshMyTickets" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem;">
+            🔄 Actualizar
+          </button>
+        </div>
+
+        <div id="myTicketsListContainer">
+          <!-- Renderizado dinámico -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CONSULTA POR CÓDIGO -->
+    <div id="tab-consultar" class="tab-content">
+      <div class="aq-card">
+        <div class="aq-card-header">
+          <h2 class="aq-card-title">
+            <span>🔎 Consultar Estado de Requerimiento</span>
+          </h2>
+        </div>
+
+        <div style="max-width: 600px; margin: 0 auto 30px auto;">
+          <div class="form-group">
+            <label class="form-label" for="trackCodeInput">Ingresa el Código de Ticket (ej: TKT-2026-0001)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="trackCodeInput" class="form-control" placeholder="TKT-2026-0001">
+              <button type="button" id="btnTrackTicket" class="btn-primary">Buscar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="trackResultContainer" style="display: none;"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: INICIO DE SESIÓN / REGISTRO DE USUARIO -->
+  <div id="modalAuth" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 480px;">
+      <div class="aq-modal-header">
+        <h3 class="aq-card-title" style="font-size: 1.15rem;" id="authModalTitle">👤 Cuenta AquaShield</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseAuthModal">&times;</button>
+      </div>
+
+      <div class="aq-modal-body">
+        
+        <!-- Tabs Modal (Login vs Registro) -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <button type="button" id="authTabLogin" class="aq-tab-btn active" style="padding: 6px 14px; font-size: 0.88rem;">Iniciar Sesión</button>
+          <button type="button" id="authTabRegister" class="aq-tab-btn" style="padding: 6px 14px; font-size: 0.88rem;">Crear Cuenta</button>
+        </div>
+
+        <!-- FORMULARIO LOGIN -->
+        <form id="formLogin">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="loginEmail">Correo Corporativo</label>
+            <input type="email" id="loginEmail" class="form-control" placeholder="marcelo.ramirez@aquachile.com" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text-secondary);">
+              <input type="checkbox" id="rememberMeCheckbox" checked>
+              <span>Recordar mis credenciales en este computador</span>
+            </label>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%;" id="btnLoginSubmit">
+            Iniciar Sesión
+          </button>
+        </form>
+
+        <!-- FORMULARIO REGISTRO -->
+        <form id="formRegister" style="display: none;">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="regName">Nombre Completo <span class="required">*</span></label>
+            <input type="text" id="regName" class="form-control" placeholder="Ej: Marcelo Ramírez" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="regEmail">Correo Corporativo <span class="required">*</span></label>
+            <input type="email" id="regEmail" class="form-control" placeholder="ejemplo@aquachile.com" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="regPhone">Teléfono / WhatsApp</label>
+            <input type="text" id="regPhone" class="form-control" placeholder="+56 9 1234 5678">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="regDept">Departamento / Área</label>
+            <input type="text" id="regDept" class="form-control" placeholder="Ej: Exportaciones / Operaciones">
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="regPassword">Crea una Contraseña <span class="required">*</span></label>
+            <input type="password" id="regPassword" class="form-control" placeholder="Mínimo 4 caracteres" required>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%;" id="btnRegisterSubmit">
+            Crear Cuenta y Guardar
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR NUEVO MÓDULO DINÁMICO -->
+  <div id="modalNewModule" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 500px;">
+      <div class="aq-modal-header">
+        <h3 class="aq-card-title" style="font-size: 1.1rem;">➕ Registrar Nuevo Módulo</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseModuleModal">&times;</button>
+      </div>
+      <div class="aq-modal-body">
+        <form id="formNewModule">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="new_module_name">
+              <span>Nombre del Módulo o Sistema <span class="required">*</span></span>
+            </label>
+            <input type="text" id="new_module_name" class="form-control" placeholder="Ej: Módulo Embarques Aéreos" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="new_module_desc">Descripción breve</label>
+            <textarea id="new_module_desc" class="form-control" style="min-height: 80px;" placeholder="Finalidad y funciones del módulo..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="aq-modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelModuleModal">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnSaveNewModule">Guardar Módulo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALLE DE TICKET CON CHAT Y CALIFICACIÓN CSAT (USUARIO) -->
+  <div id="modalUserTicketDetail" class="aq-modal-overlay">
+    <div class="aq-modal modal-large">
+      <div class="aq-modal-header">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span id="userModalCode" style="font-family: 'Quicksand', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--color-accent);">TKT-2026-0001</span>
+          <span id="userModalModule" class="aq-module-badge">Módulo</span>
+          <span id="userModalStatus" class="aq-badge">Estado</span>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseUserTicketDetail">&times;</button>
+      </div>
+
+      <div class="aq-modal-body">
+        
+        <!-- Datos Principales -->
+        <div style="margin-bottom: 20px;">
+          <h3 id="userModalTitle" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">Asunto del Ticket</h3>
+          <div style="display: flex; gap: 16px; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px; flex-wrap: wrap;">
+            <span>📅 Fecha: <strong id="userModalDate" style="color: var(--text-primary);">-</strong></span>
+            <span>⚡ Tipo: <strong id="userModalType" style="color: var(--text-primary);">-</strong></span>
+            <span>🎯 Prioridad: <strong id="userModalPriority" style="color: var(--text-primary);">-</strong></span>
+          </div>
+          <div style="background-color: var(--bg-card-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap;" id="userModalDescription">
+            Descripción...
+          </div>
+        </div>
+
+        <!-- Archivos Adjuntos -->
+        <div id="userModalAttachmentsContainer" style="margin-bottom: 20px; display: none;">
+          <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">📎 Archivos Adjuntos</h4>
+          <div id="userModalAttachmentsList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        </div>
+
+        <!-- Solución / Respuesta del Administrador -->
+        <div id="userModalResolutionArea" style="display: none; background-color: var(--status-resuelto-bg); border: 1px solid var(--status-resuelto); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: var(--status-resuelto); margin-bottom: 6px;">
+            ✅ Respuesta y Solución del Soporte Técnico:
+          </div>
+          <div id="userModalResolutionText" style="font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;"></div>
+        </div>
+
+        <!-- ⭐ WIDGET DE CALIFICACIÓN CSAT (1-5 ESTRELLAS) -->
+        <div id="userModalCsatWidget" style="display: none; background-color: var(--color-accent-soft); border: 1px dashed var(--color-accent); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px; text-align: center;">
+          <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">⭐ ¿Cómo calificarías la atención recibida?</h4>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">Tu opinión nos ayuda a mejorar continuamente el soporte de AquaShield.</p>
+          
+          <div class="star-rating-container" id="csatStarSelector" style="display: inline-flex; gap: 8px; font-size: 1.8rem; cursor: pointer; margin-bottom: 12px;">
+            <span class="star-btn" data-value="1" title="1 estrella - Muy Insatisfecho">★</span>
+            <span class="star-btn" data-value="2" title="2 estrellas - Insatisfecho">★</span>
+            <span class="star-btn" data-value="3" title="3 estrellas - Regular">★</span>
+            <span class="star-btn" data-value="4" title="4 estrellas - Bueno">★</span>
+            <span class="star-btn active" data-value="5" title="5 estrellas - ¡Excelente!">★</span>
+          </div>
+
+          <div style="max-width: 500px; margin: 0 auto 10px auto;">
+            <input type="text" id="csatFeedbackInput" class="form-control" placeholder="Comentario opcional sobre la atención..." style="font-size: 0.85rem;">
+          </div>
+
+          <div id="csatRatedConfirmation" style="display: none; font-size: 0.88rem; font-weight: 700; color: var(--color-accent); margin-top: 8px;">
+            ¡Muchas gracias! Tu calificación ha sido registrada.
+          </div>
+
+          <button type="button" class="btn-primary" id="btnSubmitCsatRating" style="margin-top: 8px; padding: 6px 18px; font-size: 0.85rem;">
+            Enviar Calificación
+          </button>
+        </div>
+
+        <!-- 💬 HILO DE CONVERSACIÓN / CHAT BIDIRECCIONAL -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>💬 Mensajes y Preguntas sobre este Ticket</span>
+            <span id="userChatCountBadge" style="background-color: var(--bg-card-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: normal;">0</span>
+          </h4>
+
+          <!-- Feed de mensajes -->
+          <div id="userChatFeed" style="max-height: 240px; overflow-y: auto; background-color: var(--bg-card-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">No hay mensajes adicionales en este ticket.</div>
+          </div>
+
+          <!-- Preview de Imagen Pegada (Ctrl + V) -->
+          <div id="userChatPastedPreview" class="chat-pasted-preview-bar" style="display: none;">
+            <div class="chat-pasted-preview-info">
+              <img id="userChatPastedThumb" class="chat-pasted-preview-thumb" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Captura pegada">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent);">📷 Captura de pantalla lista para enviar</span>
+            </div>
+            <button type="button" id="btnUserDiscardPasted" class="chat-pasted-remove-btn" title="Quitar imagen">&times;</button>
+          </div>
+
+          <!-- Caja para escribir mensaje -->
+          <div style="position: relative; display: flex; gap: 8px; align-items: flex-end;">
+            <button type="button" id="btnUserStickerTrigger" class="btn-chat-sticker-trigger" style="height: 38px; align-self: center;" title="Insertar Sticker o Emoji">😊</button>
+            <textarea id="userChatMessageInput" class="form-control" rows="2" placeholder="Escribe un mensaje o pega una captura con Ctrl+V..." style="resize: none; flex: 1;" autocomplete="off"></textarea>
+            <button type="button" id="btnSendUserComment" class="btn-primary" style="height: 38px; align-self: center; padding: 0 16px; white-space: nowrap;">
+              <span>Enviar 💬</span>
+            </button>
+
+            <!-- Popover de Stickers / Emojis -->
+            <div id="userStickerPopover" class="chat-sticker-popover"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="aq-modal-footer">
+        <button type="button" class="btn-secondary" id="btnCloseUserTicketDetailFooter">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMACIÓN EXITOSA DE TICKET -->
+  <div id="modalSuccessTicket" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 550px; text-align: center;">
+      <div class="aq-modal-body" style="padding: 36px 24px;">
+        <div style="font-size: 3.5rem; margin-bottom: 12px;">✅</div>
+        <h3 class="aq-hero-title" style="font-size: 1.5rem; margin-bottom: 8px;">¡Solicitud Ingresada con Éxito!</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          Tu requerimiento ha sido registrado en la Mesa de Ayuda de AquaShield.
+        </p>
+        
+        <div style="background-color: var(--color-accent-soft); border: 1px dashed var(--color-accent); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Código de Seguimiento</div>
+          <div id="successTicketCode" style="font-family: 'Quicksand', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text-primary);">TKT-2026-0001</div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px;">
+          Puedes ver el avance de todas tus solicitudes en la pestaña <strong>"Mis Solicitudes"</strong>.
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button type="button" class="btn-primary" id="btnSuccessOk">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCK DE MULTI-CHATS FLOTANTES SIMULTÁNEOS -->
+  <div id="floatingChatDock" class="floating-chat-dock"></div>
+
+  <!-- MODAL LIGHTBOX / VISOR DE ADJUNTOS -->
+  <div id="lightboxModal" class="lightbox-overlay">
+    <div class="lightbox-header">
+      <span class="lightbox-title" id="lightboxTitle">Vista Previa de Archivo</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a id="lightboxDownloadBtn" href="#" download class="btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; text-decoration: none; color: #fff; border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.15);">⬇️ Descargar</a>
+        <button type="button" class="lightbox-btn-close" id="btnCloseLightbox">&times;</button>
+      </div>
+    </div>
+    <div class="lightbox-body" id="lightboxBody"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="aq-footer">
+    <div><strong>AQUASHIELD</strong> · Sistema Integral de Gestión y Control | AquaChile</div>
+    <div>
+      <span>Mesa de Ayuda v1.1.0</span>
+      <a href="/admin" style="margin-left: 14px; color: var(--color-accent); text-decoration: none; font-weight: 700;">⚙️ Panel Gestión</a>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

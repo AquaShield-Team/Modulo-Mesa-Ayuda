@@ -1,0 +1,16 @@
+{
+  "name": "AquaShield Mesa de Ayuda",
+  "short_name": "AquaShield",
+  "description": "Plataforma Integral de Soporte y Mesa de Ayuda AquaChile",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EFE9E5",
+  "theme_color": "#445563",
+  "icons": [
+    {
+      "src": "/static/img/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

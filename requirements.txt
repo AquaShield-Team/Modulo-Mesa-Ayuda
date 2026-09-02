@@ -1,0 +1,9 @@
+# AquaShield ? Mesa de Ayuda / Soporte y Solicitudes
+# Instalacion: pip install -r requirements.txt
+
+flask>=3.0.0
+flask-cors>=4.0.0
+werkzeug>=3.0.0
+openpyxl>=3.1.2
+gunicorn>=21.2.0
+pyngrok>=7.0.0
