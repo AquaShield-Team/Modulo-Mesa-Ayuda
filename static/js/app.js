@@ -4,6 +4,12 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Configuracion de endpoint API para GitHub Pages vs Local/Cloud
+  const IS_GH_PAGES = window.location.hostname.includes("github.io") || window.location.protocol === "file:";
+  const API_BASE = IS_GH_PAGES 
+    ? (localStorage.getItem("aquashield_api_url") || "https://composite-divx-css-america.trycloudflare.com")
+    : "";
+
   // ── 1. Modo Oscuro / Claro ──────────────────────────────────────────────
   const themeToggleBtn = document.getElementById("themeToggleBtn");
   const html = document.documentElement;
@@ -64,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function checkAuthSession() {
     try {
       // 1. Revisar si hay sesión activa en el servidor
-      let response = await fetch("/api/auth/me", { credentials: "include" });
+      let response = await fetch(API_BASE + "/api/auth/me", { credentials: "include" });
       let data = await response.json();
 
       if (data.authenticated && data.user) {
@@ -79,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const localUser = JSON.parse(localUserStr);
           if (localUser && localUser.email) {
             // Validar con servidor
-            const r2 = await fetch(`/api/auth/me?email=${encodeURIComponent(localUser.email)}`);
+            const r2 = await fetch(API_BASE + `/api/auth/me?email=${encodeURIComponent(localUser.email)}`);
             const d2 = await r2.json();
             if (d2.authenticated && d2.user) {
               setUserSession(d2.user);
@@ -170,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      await fetch(API_BASE + "/api/auth/logout", { method: "POST", credentials: "include" });
     } catch (e) {}
     clearUserSession();
   }
@@ -213,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = true;
       btn.textContent = "Verificando...";
 
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(API_BASE + "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -249,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = true;
       btn.textContent = "Creando cuenta...";
 
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch(API_BASE + "/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -282,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      const response = await fetch(`/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, {
+      const response = await fetch(API_BASE + `/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, {
         credentials: "include"
       });
       const data = await response.json();
@@ -421,7 +427,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadModules(selectedId = null) {
     try {
-      const response = await fetch("/api/modules");
+      const response = await fetch(API_BASE + "/api/modules");
       const data = await response.json();
       
       if (data.success) {
@@ -480,7 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveNewModule.disabled = true;
       btnSaveNewModule.textContent = "Guardando...";
 
-      const response = await fetch("/api/modules", {
+      const response = await fetch(API_BASE + "/api/modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, description })
@@ -690,7 +696,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSubmitTicket.disabled = true;
       btnSubmitTicket.innerHTML = "<span>⏳ Enviando solicitud...</span>";
 
-      const response = await fetch("/api/tickets", {
+      const response = await fetch(API_BASE + "/api/tickets", {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -744,7 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnTrackTicket.disabled = true;
       btnTrackTicket.textContent = "Buscando...";
 
-      const response = await fetch(`/api/tickets/${encodeURIComponent(code)}`);
+      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(code)}`);
       const data = await response.json();
 
       if (data.success) {
@@ -886,7 +892,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.openUserTicketDetail = async function(ticketIdOrCode) {
     try {
-      const response = await fetch(`/api/tickets/${encodeURIComponent(ticketIdOrCode)}`);
+      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(ticketIdOrCode)}`);
       const data = await response.json();
       if (!data.success || !data.ticket) {
         alert("No se pudo cargar el detalle del ticket");
@@ -975,7 +981,7 @@ document.addEventListener("DOMContentLoaded", () => {
       userModalChatPoller = setInterval(async () => {
         if (modalUserTicketDetail.classList.contains("active") && currentDetailTicket) {
           try {
-            const resp = await fetch(`/api/tickets/${currentDetailTicket.id}/comments?mark_read_for=usuario`);
+            const resp = await fetch(API_BASE + `/api/tickets/${currentDetailTicket.id}/comments?mark_read_for=usuario`);
             const data = await resp.json();
             if (data.success && data.comments) {
               const prevLen = currentDetailTicket.comments ? currentDetailTicket.comments.length : 0;
@@ -1046,7 +1052,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnSubmitCsatRating.disabled = true;
         btnSubmitCsatRating.textContent = "Enviando...";
 
-        const response = await fetch(`/api/tickets/${currentDetailTicket.id}/rate`, {
+        const response = await fetch(API_BASE + `/api/tickets/${currentDetailTicket.id}/rate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1536,7 +1542,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       btnSendUserComment.disabled = true;
 
-      const response = await fetch(`/api/tickets/${currentDetailTicket.id}/comments`, {
+      const response = await fetch(API_BASE + `/api/tickets/${currentDetailTicket.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1909,7 +1915,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const authorName = currentUser ? currentUser.name : "Usuario Solicitante";
         const authorEmail = currentUser ? currentUser.email : "";
 
-        const resp = await fetch(`/api/tickets/${ticketId}/comments`, {
+        const resp = await fetch(API_BASE + `/api/tickets/${ticketId}/comments`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1971,7 +1977,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!body) return;
 
     try {
-      const resp = await fetch(`/api/tickets/${ticketId}/comments?mark_read_for=usuario`);
+      const resp = await fetch(API_BASE + `/api/tickets/${ticketId}/comments?mark_read_for=usuario`);
       const data = await resp.json();
       if (!data.success) return;
 
@@ -2047,7 +2053,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const response = await fetch(`/api/notifications?role=usuario&email=${encodeURIComponent(email)}`);
+      const response = await fetch(API_BASE + `/api/notifications?role=usuario&email=${encodeURIComponent(email)}`);
       const data = await response.json();
       if (!data.success) return;
 
@@ -2109,7 +2115,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = header.getAttribute("data-title");
             notifDropdownMenu.classList.remove("active");
             openUserFloatingChat(ticketId, code, title);
-            await fetch("/api/notifications/mark-read", {
+            await fetch(API_BASE + "/api/notifications/mark-read", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ticket_id: ticketId, role: "usuario", email: email })
@@ -2128,7 +2134,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const notifId = parseInt(item.getAttribute("data-notif-id"));
             notifDropdownMenu.classList.remove("active");
             openUserFloatingChat(ticketId, code, title);
-            await fetch("/api/notifications/mark-read", {
+            await fetch(API_BASE + "/api/notifications/mark-read", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ notification_id: notifId, role: "usuario", email: email })
@@ -2142,7 +2148,7 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.addEventListener("click", async (e) => {
             e.stopPropagation();
             const notifId = parseInt(btn.getAttribute("data-notif-id"));
-            await fetch("/api/notifications/delete", {
+            await fetch(API_BASE + "/api/notifications/delete", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ notification_id: notifId, role: "usuario", email: email })
@@ -2156,7 +2162,7 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.addEventListener("click", async (e) => {
             e.stopPropagation();
             const ticketId = parseInt(btn.getAttribute("data-ticket-id"));
-            await fetch("/api/notifications/delete", {
+            await fetch(API_BASE + "/api/notifications/delete", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ticket_id: ticketId, role: "usuario", email: email })
@@ -2173,7 +2179,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       const email = currentUser ? currentUser.email : (requesterEmailInput ? requesterEmailInput.value.trim() : "");
       if (confirm("¿Deseas limpiar las alertas de la campanita? (Esto no borra tus solicitudes ni su historial)")) {
-        await fetch("/api/notifications/clear-all", {
+        await fetch(API_BASE + "/api/notifications/clear-all", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ role: "usuario", email: email })
