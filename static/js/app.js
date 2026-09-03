@@ -99,9 +99,40 @@ document.addEventListener("DOMContentLoaded", () => {
     { code: "AQ-08", id: 8, name: "CAROLINA BASTIAS PARRA", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "TECNOLOGÍA & DESARROLLO AQUASHIELD", role: "admin", defaultPin: "2026" }
   ];
 
+  let liveCorporateDirectory = [...CORPORATE_DIRECTORY];
+
+  async function fetchLiveUsersDirectory() {
+    try {
+      const endpoint = IS_GH_PAGES ? "static/data/users.json" : (API_BASE + "/api/users/directory");
+      const resp = await fetch(endpoint);
+      const data = await resp.json();
+      const usersList = Array.isArray(data) ? data : (data && data.users ? data.users : null);
+      if (usersList && usersList.length > 0) {
+        liveCorporateDirectory = usersList.map(u => ({
+          code: `AQ-${String(u.id).padStart(2, '0')}`,
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone || "",
+          department: u.department || "",
+          role: u.role || "usuario",
+          defaultPin: u.defaultPin || u.pin || "2026"
+        }));
+        // Si el usuario actual tiene su sesión activa, refrescar su perfil si cambió el cargo
+        if (currentUser) {
+          const fresh = liveCorporateDirectory.find(u => u.email.toLowerCase() === (currentUser.email || '').toLowerCase() || String(u.id) === String(currentUser.id));
+          if (fresh && (fresh.department !== currentUser.department || fresh.name !== currentUser.name || fresh.role !== currentUser.role)) {
+            setUserSession({ ...currentUser, ...fresh });
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  fetchLiveUsersDirectory();
+
   function getFullDirectory() {
     const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
-    const full = [...CORPORATE_DIRECTORY, ...extra];
+    const full = [...liveCorporateDirectory, ...extra];
     // Ordenar alfabéticamente por nombre
     full.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
     return full;
@@ -179,6 +210,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const localUser = JSON.parse(localUserStr);
         if (localUser && (localUser.email || localUser.name)) {
           setUserSession(localUser);
+
+          // Refrescar en segundo plano desde el servidor con los datos más recientes de la BD (cargo, etc.)
+          fetch(API_BASE + `/api/auth/me?email=${encodeURIComponent(localUser.email || '')}`, { credentials: "include" })
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.user) {
+                setUserSession(data.user);
+              }
+            })
+            .catch(() => {});
           return;
         }
       } catch (e) {}

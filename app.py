@@ -1,4 +1,5 @@
 import os
+import json
 import io
 import zipfile
 import mimetypes
@@ -144,11 +145,42 @@ def admin_create_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+def _export_users_json():
+    try:
+        users = database.get_all_users()
+        out_dir = os.path.join(BASE_DIR, "static", "data")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, "users.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(users, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error exportando users.json: {e}")
+
+@app.route("/api/users/directory", methods=["GET"])
+def get_users_directory():
+    try:
+        users = database.get_all_users()
+        dir_list = []
+        for u in users:
+            dir_list.append({
+                "id": u["id"],
+                "name": u["name"],
+                "email": u["email"],
+                "phone": u.get("phone", ""),
+                "department": u.get("department", ""),
+                "role": u.get("role", "usuario"),
+                "defaultPin": u.get("pin") or "2026"
+            })
+        return jsonify({"success": True, "users": dir_list})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/admin/users/<int:user_id>", methods=["PATCH"])
 def admin_update_user_endpoint(user_id):
     try:
         data = request.get_json() or {}
         user = database.admin_update_user(user_id, data)
+        _export_users_json()
         return jsonify({"success": True, "user": user})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

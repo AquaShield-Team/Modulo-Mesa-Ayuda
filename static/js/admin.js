@@ -1981,7 +1981,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
       if (data.success) {
-        alert("Datos de usuario actualizados.");
+        // Actualizar sesión en localStorage si el usuario editado es el que tiene sesión activa
+        const savedUserStr = localStorage.getItem("aquashield_saved_user");
+        if (savedUserStr) {
+          try {
+            const savedUser = JSON.parse(savedUserStr);
+            if (String(savedUser.id) === String(currentTargetUserId) || savedUser.email === email) {
+              const updated = { ...savedUser, name, email, phone, department, role };
+              localStorage.setItem("aquashield_saved_user", JSON.stringify(updated));
+            }
+          } catch (e) {}
+        }
+        alert("Datos de usuario actualizados exitosamente.");
         closeEditUserModal();
         loadAdminUsersList();
       } else {
