@@ -59,28 +59,44 @@ document.addEventListener("DOMContentLoaded", () => {
   // Modal Auth
   const modalAuth = document.getElementById("modalAuth");
   const btnCloseAuthModal = document.getElementById("btnCloseAuthModal");
-  const authTabQuick = document.getElementById("authTabQuick");
+  const authTabTeam = document.getElementById("authTabTeam");
   const authTabRegister = document.getElementById("authTabRegister");
-  const formQuickAuth = document.getElementById("formQuickAuth");
+  const formTeamAuth = document.getElementById("formTeamAuth");
   const formRegister = document.getElementById("formRegister");
-  const quickInputId = document.getElementById("quickInputId");
-  const quickUserPreviewCard = document.getElementById("quickUserPreviewCard");
-  const previewUserName = document.getElementById("previewUserName");
-  const previewUserCode = document.getElementById("previewUserCode");
-  const previewUserDept = document.getElementById("previewUserDept");
-  const previewUserEmail = document.getElementById("previewUserEmail");
+  const userSelectPicker = document.getElementById("userSelectPicker");
+  const userNameSearchInput = document.getElementById("userNameSearchInput");
+  const selectedUserCard = document.getElementById("selectedUserCard");
+  const cardUserName = document.getElementById("cardUserName");
+  const cardUserRole = document.getElementById("cardUserRole");
+  const cardUserDept = document.getElementById("cardUserDept");
+  const cardUserEmail = document.getElementById("cardUserEmail");
+  const pinContainer = document.getElementById("pinContainer");
+  const userPinInput = document.getElementById("userPinInput");
+  const pinHintText = document.getElementById("pinHintText");
+  const toggleChangePinLink = document.getElementById("toggleChangePinLink");
+  const changePinSubbox = document.getElementById("changePinSubbox");
+  const userNewPinInput = document.getElementById("userNewPinInput");
   const rememberMeCheckbox = document.getElementById("rememberMeCheckbox");
+  const btnTeamAuthSubmit = document.getElementById("btnTeamAuthSubmit");
 
-  // ── 3. Directorio Corporativo e Identificación Rápida Dual (Código o Correo) ──
+  // ── 3. Directorio Oficial de Comercio Exterior (Reconocimiento por Nombre + PIN) ──
   const CORPORATE_DIRECTORY = [
-    { code: "AQ-05", id: 5, name: "Marcelo Ramirez", email: "marcelo.ramirez@aquachile.com", phone: "+56987634637", department: "Comercio Exterior", role: "admin" },
-    { code: "AQ-06", id: 6, name: "SCANDALOSKY", email: "scandar.mohor@aquachile.com", phone: "+56967886167", department: "COMEX FRESCO", role: "usuario" },
-    { code: "AQ-07", id: 7, name: "JONATHAN ARTURO SANCHEZ MORALES", email: "jonathan.sanchez@aquachile.com", phone: "+56998320009", department: "Comercial", role: "usuario" },
-    { code: "AQ-08", id: 8, name: "Carolina Bastias Parra", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "Tecnología", role: "admin" },
-    { code: "AQ-10", id: 10, name: "Marcelo Ramirez", email: "myaquashield@gmail.com", phone: "+56987634637", department: "Big Boss", role: "admin" },
-    { code: "AQ-12", id: 12, name: "Administrador AquaShield", email: "admin@aquachile.com", phone: "", department: "Tecnología & Soporte", role: "admin" },
-    { code: "AQ-13", id: 13, name: "Daphne Priciela Pincol Emmott", email: "daphne.pincol@aquachile.com", phone: "+56 9 5353 9281", department: "COMEX", role: "usuario" },
-    { code: "AQ-14", id: 14, name: "LIBNI EUNICE CONEJEROS MEDINA", email: "libni.conejeros@aquachile.com", phone: "+56961895302", department: "COMEX EUROPA", role: "usuario" }
+    { code: "AQ-15", id: 15, name: "CRISTINA VERONICA ZAMORANO COFRE", email: "cristina.zamorano@aquachile.com", phone: "+56 9 8765 4321", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-13", id: 13, name: "DAPHNE PRICIELA PINCOL EMMOTT", email: "daphne.pincol@aquachile.com", phone: "+56 9 5353 9281", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-16", id: 16, name: "EUGENIA MARTINEZ GONZALEZ", email: "eugenia.martinez@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-17", id: 17, name: "EVELYN AMANDA SILVA JELVES", email: "evelyn.silva@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-18", id: 18, name: "GINA MALU CHACANO CASTRO", email: "gina.chacano@aquachile.com", phone: "", department: "SUPERVISOR COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-07", id: 7, name: "JONATHAN ARTURO SANCHEZ MORALES", email: "jonathan.sanchez@aquachile.com", phone: "+56998320009", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-14", id: 14, name: "LIBNI EUNICE CONEJEROS MEDINA", email: "libni.conejeros@aquachile.com", phone: "+56961895302", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-05", id: 5, name: "MARCELO ANDRES RAMIREZ SANCHEZ", email: "marcelo.ramirez@aquachile.com", phone: "+56987634637", department: "ANALISTA COMERCIO EXTERIOR PM", role: "admin", defaultPin: "2026" },
+    { code: "AQ-19", id: 19, name: "MATIAS IGNACIO FIGUEROA MORENO", email: "matias.figueroa@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-20", id: 20, name: "MATIAS NICOLAS SOTO MANSILLA", email: "matias.soto@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-06", id: 6, name: "SCANDAR NAGUIB MOHOR TRULLA", email: "scandar.mohor@aquachile.com", phone: "+56967886167", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-21", id: 21, name: "SORAYA CRISTINA NAGUIL NAGUIL", email: "soraya.naguil@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-22", id: 22, name: "VICTOR ARNOLDO VENEGAS", email: "victor.venegas@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-23", id: 23, name: "XIMENA LEICHTLE", email: "ximena.leichtle@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-24", id: 24, name: "YULEIDY ANDREINA VALERO MUÑOZ", email: "andreina.valero@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
+    { code: "AQ-08", id: 8, name: "Carolina Bastias Parra", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "Tecnología", role: "admin", defaultPin: "2026" }
   ];
 
   function getFullDirectory() {
@@ -88,49 +104,70 @@ document.addEventListener("DOMContentLoaded", () => {
     return [...CORPORATE_DIRECTORY, ...extra];
   }
 
-  function populateDatalist() {
-    const datalist = document.getElementById("directoryDatalist");
-    if (!datalist) return;
-    datalist.innerHTML = "";
+  function getUserPin(email) {
+    const customPins = JSON.parse(localStorage.getItem("aquashield_user_pins") || "{}");
+    if (customPins[email.toLowerCase()]) {
+      return customPins[email.toLowerCase()];
+    }
+    const all = getFullDirectory();
+    const user = all.find(u => u.email.toLowerCase() === email.toLowerCase());
+    return (user && user.defaultPin) ? user.defaultPin : "2026";
+  }
+
+  function setUserPin(email, newPin) {
+    const customPins = JSON.parse(localStorage.getItem("aquashield_user_pins") || "{}");
+    customPins[email.toLowerCase()] = newPin;
+    localStorage.setItem("aquashield_user_pins", JSON.stringify(customPins));
+  }
+
+  function populateUserSelect() {
+    if (!userSelectPicker) return;
+    const currentVal = userSelectPicker.value;
+    userSelectPicker.innerHTML = '<option value="">-- Elige tu nombre de la lista --</option>';
     const all = getFullDirectory();
     all.forEach(u => {
       const opt = document.createElement("option");
-      opt.value = u.code;
-      opt.label = `${u.name} (${u.department})`;
-      datalist.appendChild(opt);
-
-      const opt2 = document.createElement("option");
-      opt2.value = u.email;
-      opt2.label = `${u.code} · ${u.name}`;
-      datalist.appendChild(opt2);
+      opt.value = u.email;
+      opt.textContent = `${u.name} (${u.department})`;
+      userSelectPicker.appendChild(opt);
     });
+    if (currentVal) userSelectPicker.value = currentVal;
   }
 
-  function findUserInDirectory(val) {
-    if (!val) return null;
-    const clean = val.trim().toLowerCase();
-    const all = getFullDirectory();
-    
-    // 1. Coincidencia exacta de código (ej: aq-14, 14)
-    let found = all.find(u => u.code.toLowerCase() === clean || u.code.toLowerCase().replace("aq-", "") === clean);
-    if (found) return found;
+  function selectUser(user) {
+    if (!user) {
+      if (selectedUserCard) selectedUserCard.style.display = "none";
+      if (pinContainer) pinContainer.style.display = "none";
+      if (btnTeamAuthSubmit) btnTeamAuthSubmit.disabled = true;
+      return;
+    }
 
-    // 2. Coincidencia exacta de correo
-    found = all.find(u => u.email.toLowerCase() === clean);
-    if (found) return found;
+    if (userSelectPicker) userSelectPicker.value = user.email;
+    if (selectedUserCard) {
+      selectedUserCard.style.display = "block";
+      cardUserName.textContent = user.name;
+      cardUserDept.textContent = user.department || "Comercio Exterior";
+      cardUserEmail.textContent = user.email;
+      cardUserRole.textContent = user.code || "COMEX";
+    }
 
-    // 3. Coincidencia parcial de nombre o correo
-    found = all.find(u => u.name.toLowerCase().includes(clean) || u.email.toLowerCase().includes(clean));
-    return found || null;
+    if (pinContainer) {
+      pinContainer.style.display = "block";
+      userPinInput.value = "";
+      if (changePinSubbox) changePinSubbox.style.display = "none";
+      if (userNewPinInput) userNewPinInput.value = "";
+      setTimeout(() => userPinInput.focus(), 80);
+    }
+
+    if (btnTeamAuthSubmit) btnTeamAuthSubmit.disabled = false;
   }
 
   function checkAuthSession() {
-    // Revisar si hay usuario guardado en localStorage (Cero llamadas de red - 100% resiliente)
     const localUserStr = localStorage.getItem("aquashield_saved_user");
     if (localUserStr) {
       try {
         const localUser = JSON.parse(localUserStr);
-        if (localUser && (localUser.email || localUser.code)) {
+        if (localUser && (localUser.email || localUser.name)) {
           setUserSession(localUser);
           return;
         }
@@ -143,7 +180,6 @@ document.addEventListener("DOMContentLoaded", () => {
     currentUser = user;
     localStorage.setItem("aquashield_saved_user", JSON.stringify(user));
 
-    const userCode = user.code || ("AQ-" + String(user.id || 99).padStart(2, '0'));
     const userDept = user.department ? ` (${user.department})` : '';
 
     // Renderizar chip de usuario en la cabecera
@@ -152,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="user-chip-avatar">${escapeHtml((user.name || 'U').charAt(0).toUpperCase())}</div>
         <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
           <span class="user-chip-name" style="font-weight: 700;">${escapeHtml(user.name)}</span>
-          <span style="font-size: 0.72rem; color: var(--color-accent); font-weight: 700;">${escapeHtml(userCode)}${escapeHtml(userDept)}</span>
+          <span style="font-size: 0.72rem; color: var(--color-accent); font-weight: 700;">${escapeHtml(user.department || 'Comercio Exterior')}</span>
         </div>
         <button type="button" id="btnLogoutBtn" class="btn-logout-icon" title="Cambiar de usuario o salir">✕</button>
       </div>
@@ -171,13 +207,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const isLocalhost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const adminNavLink = document.getElementById("adminNavLink");
     if (adminNavLink) {
-      adminNavLink.style.display = (isLocalhost || user.role === 'admin' || user.code === 'AQ-05' || user.code === 'AQ-08') ? 'inline-flex' : 'none';
+      adminNavLink.style.display = (isLocalhost || user.role === 'admin' || user.email.includes('marcelo.ramirez') || user.email.includes('carolina.bastias')) ? 'inline-flex' : 'none';
       if (IS_GH_PAGES) adminNavLink.href = "admin.html";
     }
 
     // Mostrar banner de autocompletado en el formulario
     authAutofillBanner.style.display = "flex";
-    bannerUserName.textContent = `${user.name} [${userCode}]`;
+    bannerUserName.textContent = user.name;
     bannerUserEmail.textContent = `${user.email}${userDept}`;
 
     // Autocompletar campos del formulario
@@ -215,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div style="font-size: 2.2rem; margin-bottom: 8px;">🆔</div>
         <strong style="color: var(--text-primary); font-size: 1.1rem;">Identifícate para ver tus solicitudes</strong>
         <p style="margin: 8px auto 16px auto; max-width: 400px; font-size: 0.9rem;">
-          Ingresa tu código o correo corporativo para autocompletar el formulario y consultar tu historial.
+          Selecciona tu nombre e ingresa tu PIN para autocompletar el formulario y consultar tu historial.
         </p>
         <button type="button" class="btn-primary" id="btnOpenAuthFromTab">Identificarme</button>
       </div>
@@ -226,11 +262,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openAuthModal() {
-    populateDatalist();
-    if (quickInputId) quickInputId.value = "";
-    if (quickUserPreviewCard) quickUserPreviewCard.style.display = "none";
+    populateUserSelect();
+    if (userNameSearchInput) userNameSearchInput.value = "";
+    if (userPinInput) userPinInput.value = "";
+    if (userNewPinInput) userNewPinInput.value = "";
+    if (changePinSubbox) changePinSubbox.style.display = "none";
+    selectUser(null);
     modalAuth.classList.add("active");
-    if (quickInputId) setTimeout(() => quickInputId.focus(), 100);
+    if (userSelectPicker) setTimeout(() => userSelectPicker.focus(), 100);
   }
 
   function closeAuthModal() {
@@ -241,80 +280,101 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCloseAuthModal) btnCloseAuthModal.addEventListener("click", closeAuthModal);
   if (btnChangeAccount) btnChangeAccount.addEventListener("click", openAuthModal);
 
-  if (authTabQuick && authTabRegister) {
-    authTabQuick.addEventListener("click", () => {
-      authTabQuick.classList.add("active");
+  if (authTabTeam && authTabRegister) {
+    authTabTeam.addEventListener("click", () => {
+      authTabTeam.classList.add("active");
       authTabRegister.classList.remove("active");
-      formQuickAuth.style.display = "block";
+      formTeamAuth.style.display = "block";
       formRegister.style.display = "none";
     });
 
     authTabRegister.addEventListener("click", () => {
       authTabRegister.classList.add("active");
-      authTabQuick.classList.remove("active");
+      authTabTeam.classList.remove("active");
       formRegister.style.display = "block";
-      formQuickAuth.style.display = "none";
+      formTeamAuth.style.display = "none";
     });
   }
 
-  // Vista previa dinámica mientras escribe código o correo
-  if (quickInputId) {
-    quickInputId.addEventListener("input", () => {
-      const val = quickInputId.value.trim();
-      const matched = findUserInDirectory(val);
+  // Cambio en el desplegable de nombres
+  if (userSelectPicker) {
+    userSelectPicker.addEventListener("change", () => {
+      const email = userSelectPicker.value;
+      if (!email) {
+        selectUser(null);
+        return;
+      }
+      const all = getFullDirectory();
+      const matched = all.find(u => u.email.toLowerCase() === email.toLowerCase());
+      selectUser(matched);
+    });
+  }
+
+  // Búsqueda en tiempo real por texto
+  if (userNameSearchInput) {
+    userNameSearchInput.addEventListener("input", () => {
+      const q = userNameSearchInput.value.trim().toLowerCase();
+      if (!q) return;
+      const all = getFullDirectory();
+      const matched = all.find(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
       if (matched) {
-        quickUserPreviewCard.style.display = "block";
-        previewUserName.textContent = matched.name;
-        previewUserCode.textContent = matched.code;
-        previewUserDept.textContent = matched.department || "AquaChile";
-        previewUserEmail.textContent = matched.email;
-      } else {
-        quickUserPreviewCard.style.display = "none";
+        selectUser(matched);
       }
     });
   }
 
-  // Envío de Formulario Rápido (Código o Correo)
-  if (formQuickAuth) {
-    formQuickAuth.addEventListener("submit", (e) => {
+  // Alternar campo para cambiar PIN
+  if (toggleChangePinLink && changePinSubbox) {
+    toggleChangePinLink.addEventListener("click", () => {
+      const isHidden = changePinSubbox.style.display === "none";
+      changePinSubbox.style.display = isHidden ? "block" : "none";
+      if (isHidden && userNewPinInput) userNewPinInput.focus();
+    });
+  }
+
+  // Envío de Formulario del Equipo (Nombre + PIN)
+  if (formTeamAuth) {
+    formTeamAuth.addEventListener("submit", (e) => {
       e.preventDefault();
-      const val = quickInputId.value.trim();
-      if (!val) return;
-
-      let user = findUserInDirectory(val);
-      if (user) {
-        setUserSession(user);
-        closeAuthModal();
+      const selectedEmail = userSelectPicker.value;
+      if (!selectedEmail) {
+        alert("Por favor selecciona tu nombre de la lista.");
         return;
       }
 
-      // Si no existe en el directorio pero parece un correo corporativo
-      if (val.includes("@")) {
-        const cleanEmail = val.toLowerCase();
-        const baseName = cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-        const newCode = "AQ-" + String(Math.floor(20 + Math.random() * 80));
-        user = {
-          code: newCode,
-          name: baseName,
-          email: cleanEmail,
-          department: "AquaChile",
-          phone: "",
-          role: "usuario"
-        };
-        const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
-        extra.push(user);
-        localStorage.setItem("aquashield_extra_directory", JSON.stringify(extra));
-
-        setUserSession(user);
-        closeAuthModal();
+      const all = getFullDirectory();
+      const user = all.find(u => u.email.toLowerCase() === selectedEmail.toLowerCase());
+      if (!user) {
+        alert("Usuario no encontrado.");
         return;
       }
 
-      alert("No se encontró ningún usuario con el código o correo: " + val + ". Puedes usar la pestaña '✨ Nuevo Registro' para crear tu perfil.");
+      const enteredPin = userPinInput.value.trim();
+      const correctPin = getUserPin(user.email);
+
+      if (enteredPin !== correctPin) {
+        alert("❌ PIN incorrecto. Tu PIN inicial por defecto es 2026. Si olvidaste tu PIN, contacta a Marcelo Ramírez (Admin).");
+        userPinInput.select();
+        return;
+      }
+
+      // Si definió un nuevo PIN propio
+      const newPin = userNewPinInput ? userNewPinInput.value.trim() : "";
+      if (newPin) {
+        if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+          alert("El nuevo PIN debe tener exactamente 4 números.");
+          return;
+        }
+        setUserPin(user.email, newPin);
+      }
+
+      // Sesión exitosa
+      setUserSession(user);
+      closeAuthModal();
     });
   }
 
-  // Envío de Formulario de Nuevo Registro
+  // Envío de Formulario para Otras Áreas
   if (formRegister) {
     formRegister.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -322,6 +382,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("regEmail").value.trim();
       const department = document.getElementById("regDept").value.trim();
       const phone = document.getElementById("regPhone").value.trim();
+      const pin = document.getElementById("regPin").value.trim();
+
+      if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        alert("El PIN debe tener exactamente 4 números.");
+        return;
+      }
 
       const all = getFullDirectory();
       const newCode = "AQ-" + String(all.length + 10);
@@ -331,19 +397,20 @@ document.addEventListener("DOMContentLoaded", () => {
         email: email,
         department: department,
         phone: phone,
-        role: "usuario"
+        role: "usuario",
+        defaultPin: pin
       };
 
       const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
       extra.push(newUser);
       localStorage.setItem("aquashield_extra_directory", JSON.stringify(extra));
+      setUserPin(email, pin);
 
       setUserSession(newUser);
       closeAuthModal();
-      alert(`¡Bienvenido/a, ${name}! Tu código de acceso rápido es ${newCode}. Ha quedado guardado en este equipo.`);
+      alert(`¡Bienvenido/a, ${name}! Tu perfil ha quedado configurado con tu PIN personal.`);
     });
   }
-
 
   // ── 4. Cargar "Mis Solicitudes" ───────────────────────────────────────────
   async function loadMyTickets() {

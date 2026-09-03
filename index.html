@@ -341,62 +341,93 @@
 
   </main>
 
-  <!-- MODAL: IDENTIFICACIÓN CORPORATIVA RÁPIDA (SIN CONTRASEÑA) -->
+  <!-- MODAL: IDENTIFICACIÓN POR NOMBRE Y PIN DE SEGURIDAD -->
   <div id="modalAuth" class="aq-modal-overlay">
-    <div class="aq-modal" style="max-width: 480px;">
+    <div class="aq-modal" style="max-width: 500px;">
       <div class="aq-modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 1.25rem;">👤</span>
-          <h3 class="aq-card-title" style="font-size: 1.1rem; margin: 0;">Identificación AquaShield</h3>
+          <span style="font-size: 1.25rem;">👥</span>
+          <h3 class="aq-card-title" style="font-size: 1.1rem; margin: 0;">Identificación · Comercio Exterior AquaChile</h3>
         </div>
         <button type="button" class="btn-close-modal" id="btnCloseAuthModal">&times;</button>
       </div>
 
       <div class="aq-modal-body">
         
-        <!-- Tabs Modal (Identificación Rápida vs Nuevo Usuario) -->
-        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-          <button type="button" id="authTabQuick" class="aq-tab-btn active" style="padding: 6px 14px; font-size: 0.88rem;">⚡ Ingreso Rápido</button>
-          <button type="button" id="authTabRegister" class="aq-tab-btn" style="padding: 6px 14px; font-size: 0.88rem;">✨ Nuevo Registro</button>
+        <!-- Tabs Modal -->
+        <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <button type="button" id="authTabTeam" class="aq-tab-btn active" style="padding: 6px 14px; font-size: 0.88rem;">👤 Miembro del Equipo</button>
+          <button type="button" id="authTabRegister" class="aq-tab-btn" style="padding: 6px 14px; font-size: 0.88rem;">✨ Soy de Otra Área</button>
         </div>
 
-        <!-- FORMULARIO INGRESO RÁPIDO (CÓDIGO O CORREO) -->
-        <form id="formQuickAuth">
+        <!-- FORMULARIO EQUIPO POR NOMBRE + PIN -->
+        <form id="formTeamAuth">
+          <!-- Paso 1: Selección o Búsqueda por Nombre -->
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="quickInputId">
-              <span>Tu Correo Corporativo o Código Único <span class="required">*</span></span>
+            <label class="form-label" for="userSelectPicker">
+              <span>Selecciona tu Nombre <span class="required">*</span></span>
             </label>
-            <input type="text" id="quickInputId" class="form-control" list="directoryDatalist" placeholder="Ej: AQ-14 o libni.conejeros@aquachile.com" required autocomplete="off">
-            <datalist id="directoryDatalist">
-              <!-- Se puebla dinámicamente con el directorio -->
-            </datalist>
-            <small style="display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.8rem;">
-              💡 Escribe tu código personal (ej: <strong>AQ-14</strong>, <strong>AQ-07</strong>, <strong>AQ-06</strong>) o parte de tu correo.
-            </small>
+            <select id="userSelectPicker" class="form-control" style="font-size: 0.92rem; font-weight: 600; padding: 10px 12px; cursor: pointer;">
+              <option value="">-- Elige tu nombre de la lista --</option>
+            </select>
           </div>
 
-          <!-- Preview dinámico de datos encontrados -->
-          <div id="quickUserPreviewCard" style="display: none; background-color: var(--color-accent-soft); border: 1px solid var(--color-accent); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-              <strong id="previewUserName" style="color: var(--text-primary); font-size: 0.95rem;">Nombre</strong>
-              <span id="previewUserCode" style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent); background: rgba(235,95,10,0.15); padding: 2px 6px; border-radius: 4px;">AQ-00</span>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="userNameSearchInput" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">
+              <span>O búscalo escribiendo:</span>
+            </label>
+            <input type="text" id="userNameSearchInput" class="form-control" placeholder="🔍 Escribe parte de tu nombre (ej: Cristina, Soraya, Víctor)..." autocomplete="off" style="font-size: 0.86rem;">
+          </div>
+
+          <!-- Tarjeta de Confirmación de Perfil -->
+          <div id="selectedUserCard" style="display: none; background: var(--color-accent-soft); border: 1.5px solid var(--color-accent); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <strong id="cardUserName" style="color: var(--text-primary); font-size: 1rem;">Nombre Completo</strong>
+              <span id="cardUserRole" class="aq-badge" style="background: var(--color-accent); color: #fff; font-size: 0.72rem;">COMEX</span>
             </div>
-            <div id="previewUserDept" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 2px;">Área</div>
-            <div id="previewUserEmail" style="font-size: 0.82rem; color: var(--text-secondary);">correo@aquachile.com</div>
+            <div style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 2px;">
+              🏢 Cargo: <strong id="cardUserDept" style="color: var(--text-primary);">Analista Comercio Exterior</strong>
+            </div>
+            <div style="font-size: 0.84rem; color: var(--text-secondary);">
+              📧 Correo: <strong id="cardUserEmail" style="color: var(--text-primary);">correo@aquachile.com</strong>
+            </div>
+          </div>
+
+          <!-- Paso 2: PIN de Seguridad Personal -->
+          <div id="pinContainer" style="display: none; background: var(--bg-card-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <label class="form-label" for="userPinInput" style="margin-bottom: 6px;">
+              <span>🔒 PIN Personal de Seguridad (4 dígitos) <span class="required">*</span></span>
+            </label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="password" id="userPinInput" maxlength="4" placeholder="••••" pattern="[0-9]{4}" inputmode="numeric" class="form-control" style="font-size: 1.4rem; letter-spacing: 8px; text-align: center; max-width: 140px; font-weight: 700;" autocomplete="off" required>
+              <div style="flex: 1; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.3;" id="pinHintText">
+                🛡️ Tu PIN inicial por defecto es <strong>2026</strong>.
+              </div>
+            </div>
+            
+            <!-- Opción para cambiar PIN si lo desean -->
+            <div style="margin-top: 10px; font-size: 0.78rem;">
+              <a href="javascript:void(0)" id="toggleChangePinLink" style="color: var(--color-accent); text-decoration: none; font-weight: 600;">⚙️ ¿Quieres cambiar tu PIN a uno propio?</a>
+              <div id="changePinSubbox" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+                <label style="font-size: 0.76rem; color: var(--text-secondary);">Ingresa tu nuevo PIN de 4 dígitos:</label>
+                <input type="password" id="userNewPinInput" maxlength="4" placeholder="Nuevo PIN" class="form-control" style="font-size: 0.9rem; letter-spacing: 4px; text-align: center; max-width: 140px; margin-top: 4px;">
+              </div>
+            </div>
           </div>
 
           <div style="margin-bottom: 16px;">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text-secondary);">
               <input type="checkbox" id="rememberMeCheckbox" checked>
-              <span>Recordar mis datos en este equipo (Autocompletar siempre)</span>
+              <span>Recordar en este computador (No volver a pedir PIN aquí)</span>
             </label>
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%;" id="btnQuickSubmit">
-            Entrar y Autocompletar 🚀
+
+          <button type="submit" class="btn-primary" style="width: 100%;" id="btnTeamAuthSubmit" disabled>
+            Entrar y Autocompletar Formulario 🚀
           </button>
         </form>
 
-        <!-- FORMULARIO REGISTRO PARA NUEVOS USUARIOS -->
+        <!-- FORMULARIO REGISTRO PARA OTRAS ÁREAS -->
         <form id="formRegister" style="display: none;">
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" for="regName">Nombre Completo <span class="required">*</span></label>
@@ -410,9 +441,13 @@
             <label class="form-label" for="regDept">Departamento / Área <span class="required">*</span></label>
             <input type="text" id="regDept" class="form-control" placeholder="Ej: Logística / Planta Quellón" required>
           </div>
-          <div class="form-group" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" for="regPhone">Teléfono / WhatsApp</label>
             <input type="text" id="regPhone" class="form-control" placeholder="+56 9 1234 5678">
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="regPin">Crea un PIN de 4 dígitos <span class="required">*</span></label>
+            <input type="password" id="regPin" maxlength="4" placeholder="Ej: 1234" class="form-control" style="letter-spacing: 4px; max-width: 140px;" required>
           </div>
           <button type="submit" class="btn-primary" style="width: 100%;" id="btnRegisterSubmit">
             Guardar mis Datos y Continuar ✨
