@@ -1412,12 +1412,15 @@ textarea.form-control {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .floating-chat-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .floating-chat-btn-action {
@@ -1431,15 +1434,27 @@ textarea.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1;
+  text-decoration: none;
   transition: all 0.15s ease;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.floating-chat-btn-action.btn-teams {
+  background: #6264A7;
+  border-color: #7B7DBB;
 }
 
 .floating-chat-btn-action:hover {
   background: rgba(255, 255, 255, 0.45);
   color: #FFFFFF;
+}
+
+.floating-chat-btn-action.btn-teams:hover {
+  background: #7B7DBB;
 }
 
 .floating-chat-btn-action.btn-chat-close:hover {

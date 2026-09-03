@@ -2500,19 +2500,21 @@ ${fullDescription}
 
     chatWin.innerHTML = `
       <div class="floating-chat-header">
-        <div class="floating-chat-header-title">
+        <div class="floating-chat-header-title" style="flex: 1; min-width: 0;">
           <span style="color: #4CAF50;">●</span>
-          <span>${ticketCode} · Soporte AquaShield</span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ticketCode} · Soporte</span>
         </div>
-        <div class="floating-chat-header-actions" style="display: flex; align-items: center; gap: 4px;">
-          <a href="https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent('Hola Marcelo, te contacto sobre el ticket ' + ticketCode + ' (' + moduleName + ')')}" target="_blank" class="floating-chat-btn-action" title="Abrir en Microsoft Teams" style="text-decoration: none; font-size: 0.76rem; background: #6264A7; padding: 2px 7px; border-radius: 4px; color: #fff; display: inline-flex; align-items: center; gap: 3px;">
-            <span>💬 Teams</span>
-          </a>
+        <div class="floating-chat-header-actions" style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+          <a href="https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent('Hola Marcelo, te contacto sobre el ticket ' + ticketCode + ' (' + moduleName + ')')}" target="_blank" class="floating-chat-btn-action btn-teams" title="Abrir chat en Microsoft Teams">💬</a>
           <button type="button" class="floating-chat-btn-action btn-min-chat" title="Minimizar / Restaurar">_</button>
           <button type="button" class="floating-chat-btn-action btn-close-chat" title="Cerrar ventana">&times;</button>
         </div>
       </div>
       <div class="floating-chat-body" id="userFloatChatBody_${ticketId}">
+        <div style="background: rgba(98, 100, 167, 0.08); border-bottom: 1px solid rgba(98, 100, 167, 0.2); padding: 6px 10px; font-size: 0.74rem; display: flex; align-items: center; justify-content: space-between;">
+          <span style="color: #6264A7; font-weight: 600;">💬 Microsoft Teams</span>
+          <a href="https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent('Hola Marcelo, sobre el ticket ' + ticketCode + ' (' + moduleName + ')')}" target="_blank" style="color: #6264A7; font-weight: 700; text-decoration: underline;">Abrir en Teams ↗</a>
+        </div>
         <div style="text-align: center; color: var(--text-secondary); font-size: 0.78rem; padding: 20px 0;">Cargando mensajes...</div>
       </div>
 
