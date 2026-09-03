@@ -504,6 +504,7 @@
           <span id="userModalCode" style="font-family: 'Quicksand', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--color-accent);">TKT-2026-0001</span>
           <span id="userModalModule" class="aq-module-badge">Módulo</span>
           <span id="userModalStatus" class="aq-badge">Estado</span>
+          <button type="button" id="btnUserModalResend" class="btn-primary" style="display: none; padding: 4px 12px; font-size: 0.8rem; background: #2E7D32; border-color: #2E7D32;" title="Reenviar este requerimiento al Servidor Central">🚀 Reenviar a Marcelo</button>
         </div>
         <button type="button" class="btn-close-modal" id="btnCloseUserTicketDetail">&times;</button>
       </div>
@@ -637,6 +638,57 @@
         <div style="display: flex; justify-content: center; gap: 12px;">
           <button type="button" class="btn-primary" id="btnSuccessOk" style="min-width: 140px;">Listo / Entendido</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REENVIAR TICKET AL SERVIDOR CENTRAL -->
+  <div id="modalResendTicket" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 550px;">
+      <div class="aq-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🚀</span>
+          <h3 class="aq-card-title" style="margin: 0; font-size: 1.1rem;">Reenviar Ticket a Marcelo Ramírez</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseResendModal">&times;</button>
+      </div>
+      <div class="aq-modal-body" style="padding: 22px 24px;">
+        <div style="background-color: var(--color-accent-soft); border: 1.5px dashed var(--color-accent); border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px;">
+          <div id="resendModalCode" style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">TKT-WAIT-XXXX</div>
+          <div id="resendModalTitle" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin: 4px 0;">...</div>
+          <div id="resendModalSub" style="font-size: 0.8rem; color: var(--text-secondary);">...</div>
+        </div>
+
+        <p style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 16px;">
+          Selecciona el canal por el cual deseas despachar este requerimiento a Marcelo:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <form id="resendDirectForm" action="http://PM-COME-N255:5050/api/tickets" method="POST" target="_blank" style="margin: 0;">
+            <input type="hidden" name="requester_name" id="resendFormName">
+            <input type="hidden" name="requester_email" id="resendFormEmail">
+            <input type="hidden" name="requester_phone" id="resendFormPhone">
+            <input type="hidden" name="module_name" id="resendFormModule">
+            <input type="hidden" name="type" id="resendFormType">
+            <input type="hidden" name="priority" id="resendFormPriority">
+            <input type="hidden" name="title" id="resendFormTitle">
+            <input type="hidden" name="description" id="resendFormDesc">
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 11px 16px; font-size: 0.88rem; background: #2E7D32; border-color: #2E7D32; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>⚡ 1. Despachar al Servidor Central (Red AquaChile)</span>
+            </button>
+          </form>
+
+          <a id="btnResendMailto" href="#" class="btn-secondary" style="width: 100%; padding: 10px 16px; font-size: 0.86rem; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; border-color: var(--color-accent); color: var(--color-accent);">
+            <span>✉️ 2. Enviar por Correo Outlook a Marcelo</span>
+          </a>
+
+          <button type="button" id="btnResendTeams" class="btn-secondary" style="width: 100%; padding: 10px 16px; font-size: 0.86rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>📋 3. Copiar Resumen para Microsoft Teams</span>
+          </button>
+        </div>
+      </div>
+      <div class="aq-modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelResendModal">Cerrar</button>
       </div>
     </div>
   </div>

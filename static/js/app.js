@@ -659,7 +659,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--text-secondary); border-top: 1px dashed var(--border-color); padding-top: 8px;">
           <span>Registrado el: ${escapeHtml(t.created_at || '')}</span>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${(t.is_offline || t.status === 'en_espera') ? `<button type="button" class="btn-primary btn-user-card-resend" style="padding: 3px 10px; font-size: 0.75rem; background: #2E7D32; border-color: #2E7D32;" title="Reenviar requerimiento a Marcelo">🚀 Reenviar</button>` : ''}
             <button type="button" class="btn-secondary btn-user-card-chat" style="padding: 3px 8px; font-size: 0.75rem;" title="Abrir chat en el lateral">💬 Chat Lateral</button>
             <button type="button" class="btn-primary btn-user-card-view" style="padding: 3px 8px; font-size: 0.75rem;" title="Ver detalle completo">👁️ Ver Detalle</button>
           </div>
@@ -671,6 +672,14 @@ document.addEventListener("DOMContentLoaded", () => {
         btnChat.addEventListener("click", (e) => {
           e.stopPropagation();
           openUserFloatingChat(t.id, t.code, t.module_name);
+        });
+      }
+
+      const btnResend = card.querySelector(".btn-user-card-resend");
+      if (btnResend) {
+        btnResend.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openResendTicketModal(t);
         });
       }
 
@@ -695,6 +704,98 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnRefreshMyTickets) {
     btnRefreshMyTickets.addEventListener("click", loadMyTickets);
   }
+
+
+  // ── Modal para Reenviar Ticket a Marcelo ─────────────────────────────────
+  const modalResendTicket = document.getElementById("modalResendTicket");
+  const btnCloseResendModal = document.getElementById("btnCloseResendModal");
+  const btnCancelResendModal = document.getElementById("btnCancelResendModal");
+  const resendModalCode = document.getElementById("resendModalCode");
+  const resendModalTitle = document.getElementById("resendModalTitle");
+  const resendModalSub = document.getElementById("resendModalSub");
+  const resendFormName = document.getElementById("resendFormName");
+  const resendFormEmail = document.getElementById("resendFormEmail");
+  const resendFormPhone = document.getElementById("resendFormPhone");
+  const resendFormModule = document.getElementById("resendFormModule");
+  const resendFormType = document.getElementById("resendFormType");
+  const resendFormPriority = document.getElementById("resendFormPriority");
+  const resendFormTitle = document.getElementById("resendFormTitle");
+  const resendFormDesc = document.getElementById("resendFormDesc");
+  const btnResendMailto = document.getElementById("btnResendMailto");
+  const btnResendTeams = document.getElementById("btnResendTeams");
+
+  function openResendTicketModal(t) {
+    if (!modalResendTicket || !t) return;
+
+    if (resendModalCode) resendModalCode.textContent = t.code || "TKT-WAIT";
+    if (resendModalTitle) resendModalTitle.textContent = t.title || "Requerimiento";
+    if (resendModalSub) resendModalSub.textContent = `Módulo: ${t.module_name || 'AquaShield'} | Solicitante: ${t.requester_name || 'Colaborador COMEX'}`;
+
+    if (resendFormName) resendFormName.value = t.requester_name || "";
+    if (resendFormEmail) resendFormEmail.value = t.requester_email || "";
+    if (resendFormPhone) resendFormPhone.value = t.requester_phone || "";
+    if (resendFormModule) resendFormModule.value = t.module_name || "";
+    if (resendFormType) resendFormType.value = t.type || "problema";
+    if (resendFormPriority) resendFormPriority.value = t.priority || "media";
+    if (resendFormTitle) resendFormTitle.value = t.title || "";
+    if (resendFormDesc) resendFormDesc.value = (t.code ? `[Desde ${t.code}]\n\n` : "") + (t.description || "");
+
+    // Configurar Mailto
+    const mailSubj = encodeURIComponent(`[MESA DE AYUDA AQUASHIELD] ${t.code || 'REQUERIMIENTO'}: ${t.title} (${t.module_name})`);
+    const mailBody = encodeURIComponent(
+`Hola Marcelo,
+
+He registrado el siguiente requerimiento en la Mesa de Ayuda AquaShield:
+
+══════════════════════════════════════════════════════
+📌 CÓDIGO TEMPORAL: ${t.code || 'EN ESPERA'}
+👤 SOLICITANTE:     ${t.requester_name} (${t.requester_email})
+📞 CONTACTO:        ${t.requester_phone || 'No especificado'}
+📦 MÓDULO AFECTADO: ${t.module_name}
+⚡ TIPO:             ${(t.type || 'problema').toUpperCase()}
+🎯 PRIORIDAD:        ${(t.priority || 'media').toUpperCase()}
+📝 TÍTULO:           ${t.title}
+══════════════════════════════════════════════════════
+
+DESCRIPCIÓN DEL CASO:
+${t.description}
+
+══════════════════════════════════════════════════════
+(Reenviado desde Portal AquaShield)`
+    );
+
+    if (btnResendMailto) {
+      btnResendMailto.href = `mailto:marcelo.ramirez@aquachile.com?cc=${encodeURIComponent(t.requester_email || '')}&subject=${mailSubj}&body=${mailBody}`;
+    }
+
+    // Configurar Teams
+    if (btnResendTeams) {
+      const teamsText = `🔔 *Nuevo Requerimiento AquaShield* (${t.code || 'EN ESPERA'})\n` +
+        `👤 *Solicitante:* ${t.requester_name} (${t.requester_email})\n` +
+        `📦 *Módulo:* ${t.module_name} | *Tipo:* ${(t.type || 'problema').toUpperCase()}\n` +
+        `📝 *Título:* ${t.title}\n` +
+        `📄 *Detalle:* ${(t.description || '').substring(0, 300)}...`;
+
+      btnResendTeams.onclick = () => {
+        navigator.clipboard.writeText(teamsText).then(() => {
+          btnResendTeams.innerHTML = "<span>✅ ¡Copiado! Pégalo en Teams con Ctrl+V</span>";
+          setTimeout(() => {
+            btnResendTeams.innerHTML = "<span>📋 3. Copiar Resumen para Microsoft Teams</span>";
+          }, 3500);
+        }).catch(() => {
+          alert("No se pudo copiar automáticamente. Usa el botón de Outlook.");
+        });
+      };
+    }
+
+    modalResendTicket.classList.add("active");
+  }
+
+  const closeResendModal = () => {
+    if (modalResendTicket) modalResendTicket.classList.remove("active");
+  };
+  if (btnCloseResendModal) btnCloseResendModal.addEventListener("click", closeResendModal);
+  if (btnCancelResendModal) btnCancelResendModal.addEventListener("click", closeResendModal);
 
   // ── 5. Tabs de Navegación ────────────────────────────────────────────────
   const tabBtns = document.querySelectorAll(".aq-tab-btn");
@@ -1406,6 +1507,20 @@ ${fullDescription}
       userModalModule.textContent = t.module_name;
       userModalStatus.className = `aq-badge status-${t.status}`;
       userModalStatus.textContent = `${st.icon} ${st.label}`;
+
+      const btnUserModalResend = document.getElementById("btnUserModalResend");
+      if (btnUserModalResend) {
+        if (t.is_offline || t.status === "en_espera") {
+          btnUserModalResend.style.display = "inline-flex";
+          btnUserModalResend.onclick = (e) => {
+            e.stopPropagation();
+            openResendTicketModal(t);
+          };
+        } else {
+          btnUserModalResend.style.display = "none";
+        }
+      }
+
       userModalTitle.textContent = t.title;
       userModalDate.textContent = t.created_at;
       userModalType.textContent = (t.type || "").toUpperCase();
