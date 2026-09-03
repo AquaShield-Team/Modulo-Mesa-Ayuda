@@ -596,28 +596,59 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ── 6. Cargar Módulos desde la API ───────────────────────────────────────
+  // ── 6. Cargar Módulos Oficiales (Resiliente 100% Offline-First) ─────────
   const moduleSelect = document.getElementById("module_select");
 
+  const DEFAULT_OFFICIAL_MODULES = [
+    { id: 1, name: "Módulo Congelado", description: "Gestión, empaque y trazabilidad de producto congelado" },
+    { id: 2, name: "Módulo Fresco", description: "Procesamiento y exportación de salmón fresco" },
+    { id: 3, name: "Módulo Proformas", description: "Generación, validación y control de facturas proforma" },
+    { id: 4, name: "Módulo Seguros", description: "Emisión automática de pólizas y certificados de seguros" },
+    { id: 5, name: "Módulo ExportDesk", description: "Monitoreo y gestión de despachos de exportación" },
+    { id: 7, name: "Agente Correos", description: "Clasificación inteligente y extracción de correos operacionales" },
+    { id: 8, name: "Módulo Termógrafo", description: "Lectura y análisis de registros térmicos y temperaturas" },
+    { id: 9, name: "Módulo Validador HC", description: "Validación y verificación de certificados sanitarios (HC)" },
+    { id: 10, name: "Módulo Invoice Converter", description: "Conversión y estandarización de invoices y packing lists" },
+    { id: 11, name: "Módulo ISF", description: "Presentación y seguimiento de declaraciones ISF ante aduanas" },
+    { id: 13, name: "Módulo Carga Neppex", description: "Integración y subida de planillas al sistema Neppex" },
+    { id: 14, name: "Módulo LabelInspect", description: "Inspección y auditoría de etiquetas y rotulaciones de cajas" },
+    { id: 18, name: "Otro / General", description: "Otras solicitudes o requerimientos no catalogados" }
+  ];
+
+  function renderModulesList(modulesList, selectedId = null) {
+    if (!moduleSelect) return;
+    const currentVal = selectedId || moduleSelect.value;
+    moduleSelect.innerHTML = '<option value="">-- Selecciona un módulo --</option>';
+    modulesList.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.name;
+      if (currentVal && (m.id == currentVal || m.name.toLowerCase() === currentVal.toString().toLowerCase())) {
+        opt.selected = true;
+      }
+      moduleSelect.appendChild(opt);
+    });
+  }
+
   async function loadModules(selectedId = null) {
+    // 1. Mostrar de inmediato los módulos oficiales + personalizados (Cero demora)
+    const custom = JSON.parse(localStorage.getItem("aquashield_custom_modules") || "[]");
+    const combined = [...DEFAULT_OFFICIAL_MODULES, ...custom];
+    renderModulesList(combined, selectedId);
+
+    // 2. Si el backend está disponible, sincronizar con la base de datos
     try {
-      const response = await fetch(API_BASE + "/api/modules");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const response = await fetch(API_BASE + "/api/modules", { signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await response.json();
       
-      if (data.success) {
-        moduleSelect.innerHTML = '<option value="">-- Selecciona un módulo --</option>';
-        data.modules.forEach(m => {
-          const opt = document.createElement("option");
-          opt.value = m.id;
-          opt.textContent = m.name;
-          if (selectedId && (m.id == selectedId || m.name.toLowerCase() === selectedId.toString().toLowerCase())) {
-            opt.selected = true;
-          }
-          moduleSelect.appendChild(opt);
-        });
+      if (data.success && data.modules && data.modules.length > 0) {
+        renderModulesList(data.modules, selectedId);
       }
     } catch (err) {
-      console.error("Error al cargar módulos:", err);
+      // Backend offline o en reposo: los módulos oficiales ya están visibles
     }
   }
 
@@ -660,21 +691,30 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSaveNewModule.disabled = true;
       btnSaveNewModule.textContent = "Guardando...";
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
       const response = await fetch(API_BASE + "/api/modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description })
+        body: JSON.stringify({ name, description }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const data = await response.json();
       if (data.success) {
         await loadModules(data.module.id);
         closeModuleModal();
-      } else {
-        alert("Error: " + (data.error || "No se pudo guardar el módulo"));
+        return;
       }
     } catch (err) {
-      alert("Error de conexión al guardar el módulo");
+      // Si el backend no responde, guardar módulo en caché local del navegador
+      const custom = JSON.parse(localStorage.getItem("aquashield_custom_modules") || "[]");
+      const newId = "local-" + Date.now();
+      custom.push({ id: newId, name: name, description: description });
+      localStorage.setItem("aquashield_custom_modules", JSON.stringify(custom));
+      loadModules(newId);
+      closeModuleModal();
     } finally {
       btnSaveNewModule.disabled = false;
       btnSaveNewModule.textContent = "Guardar Módulo";
