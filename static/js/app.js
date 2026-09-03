@@ -96,12 +96,15 @@ document.addEventListener("DOMContentLoaded", () => {
     { code: "AQ-22", id: 22, name: "VICTOR ARNOLDO VENEGAS", email: "victor.venegas@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
     { code: "AQ-23", id: 23, name: "XIMENA LEICHTLE", email: "ximena.leichtle@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR", role: "usuario", defaultPin: "2026" },
     { code: "AQ-24", id: 24, name: "YULEIDY ANDREINA VALERO MUÑOZ", email: "andreina.valero@aquachile.com", phone: "", department: "ANALISTA COMERCIO EXTERIOR PM", role: "usuario", defaultPin: "2026" },
-    { code: "AQ-08", id: 8, name: "Carolina Bastias Parra", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "Tecnología", role: "admin", defaultPin: "2026" }
+    { code: "AQ-08", id: 8, name: "CAROLINA BASTIAS PARRA", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "TECNOLOGÍA & DESARROLLO AQUASHIELD", role: "admin", defaultPin: "2026" }
   ];
 
   function getFullDirectory() {
     const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
-    return [...CORPORATE_DIRECTORY, ...extra];
+    const full = [...CORPORATE_DIRECTORY, ...extra];
+    // Ordenar alfabéticamente por nombre
+    full.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+    return full;
   }
 
   function getUserPin(email) {
