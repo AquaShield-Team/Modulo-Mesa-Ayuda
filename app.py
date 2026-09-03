@@ -36,6 +36,14 @@ def index():
 def admin():
     return render_template("admin.html")
 
+@app.route("/api/health", methods=["GET", "HEAD", "OPTIONS"])
+def health_check():
+    response = jsonify({"status": "ok", "service": "aquashield-helpdesk", "server": "PM-COME-N255", "timestamp": datetime.now().isoformat()})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+    response.headers.add("Access-Control-Allow-Headers", "*")
+    return response, 200
+
 # ── API: Autenticación & Perfil de Usuario ──────────────────────────────────
 
 @app.route("/api/auth/register", methods=["POST"])
