@@ -1555,6 +1555,12 @@ ${fullDescription}
       userModalPriority.textContent = (t.priority || "").toUpperCase();
       userModalDescription.textContent = t.description;
 
+      const btnOpenUserTeamsChat = document.getElementById("btnOpenUserTeamsChat");
+      if (btnOpenUserTeamsChat) {
+        const teamsMsg = `Hola Marcelo, te contacto respecto a mi requerimiento *${t.code}* (${t.title}). Adjunto aquí los archivos y detalles de mi caso.`;
+        btnOpenUserTeamsChat.href = `https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent(teamsMsg)}`;
+      }
+
       // Adjuntos
       renderUserModalAttachments(t);
 
@@ -1587,7 +1593,11 @@ ${fullDescription}
               alert("Error al subir archivo: " + (data.error || ""));
             }
           } catch (e) {
-            alert("Error de conexión al subir el archivo.");
+            const teamsMsg = `Hola Marcelo, te comparto el archivo adjunto para el ticket *${t.code}* (${t.title}).`;
+            const teamsUrl = `https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent(teamsMsg)}`;
+            if (confirm("El portal web de contingencia no puede almacenar archivos directamente sin servidor local.\n\n¿Deseas abrir Microsoft Teams para enviárselo directamente a Marcelo Ramírez?")) {
+              window.open(teamsUrl, "_blank");
+            }
           } finally {
             btnUserAddAttachment.textContent = "+ Adjuntar Archivo";
             btnUserAddAttachment.disabled = false;
@@ -2494,7 +2504,10 @@ ${fullDescription}
           <span style="color: #4CAF50;">●</span>
           <span>${ticketCode} · Soporte AquaShield</span>
         </div>
-        <div class="floating-chat-header-actions">
+        <div class="floating-chat-header-actions" style="display: flex; align-items: center; gap: 4px;">
+          <a href="https://teams.microsoft.com/l/chat/0/0?users=marcelo.ramirez@aquachile.com&message=${encodeURIComponent('Hola Marcelo, te contacto sobre el ticket ' + ticketCode + ' (' + moduleName + ')')}" target="_blank" class="floating-chat-btn-action" title="Abrir en Microsoft Teams" style="text-decoration: none; font-size: 0.76rem; background: #6264A7; padding: 2px 7px; border-radius: 4px; color: #fff; display: inline-flex; align-items: center; gap: 3px;">
+            <span>💬 Teams</span>
+          </a>
           <button type="button" class="floating-chat-btn-action btn-min-chat" title="Minimizar / Restaurar">_</button>
           <button type="button" class="floating-chat-btn-action btn-close-chat" title="Cerrar ventana">&times;</button>
         </div>
