@@ -341,67 +341,81 @@
 
   </main>
 
-  <!-- MODAL: INICIO DE SESIÓN / REGISTRO DE USUARIO -->
+  <!-- MODAL: IDENTIFICACIÓN CORPORATIVA RÁPIDA (SIN CONTRASEÑA) -->
   <div id="modalAuth" class="aq-modal-overlay">
     <div class="aq-modal" style="max-width: 480px;">
       <div class="aq-modal-header">
-        <h3 class="aq-card-title" style="font-size: 1.15rem;" id="authModalTitle">👤 Cuenta AquaShield</h3>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">👤</span>
+          <h3 class="aq-card-title" style="font-size: 1.1rem; margin: 0;">Identificación AquaShield</h3>
+        </div>
         <button type="button" class="btn-close-modal" id="btnCloseAuthModal">&times;</button>
       </div>
 
       <div class="aq-modal-body">
         
-        <!-- Tabs Modal (Login vs Registro) -->
+        <!-- Tabs Modal (Identificación Rápida vs Nuevo Usuario) -->
         <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-          <button type="button" id="authTabLogin" class="aq-tab-btn active" style="padding: 6px 14px; font-size: 0.88rem;">Iniciar Sesión</button>
-          <button type="button" id="authTabRegister" class="aq-tab-btn" style="padding: 6px 14px; font-size: 0.88rem;">Crear Cuenta</button>
+          <button type="button" id="authTabQuick" class="aq-tab-btn active" style="padding: 6px 14px; font-size: 0.88rem;">⚡ Ingreso Rápido</button>
+          <button type="button" id="authTabRegister" class="aq-tab-btn" style="padding: 6px 14px; font-size: 0.88rem;">✨ Nuevo Registro</button>
         </div>
 
-        <!-- FORMULARIO LOGIN -->
-        <form id="formLogin">
+        <!-- FORMULARIO INGRESO RÁPIDO (CÓDIGO O CORREO) -->
+        <form id="formQuickAuth">
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="loginEmail">Correo Corporativo</label>
-            <input type="email" id="loginEmail" class="form-control" placeholder="marcelo.ramirez@aquachile.com" required>
+            <label class="form-label" for="quickInputId">
+              <span>Tu Correo Corporativo o Código Único <span class="required">*</span></span>
+            </label>
+            <input type="text" id="quickInputId" class="form-control" list="directoryDatalist" placeholder="Ej: AQ-14 o libni.conejeros@aquachile.com" required autocomplete="off">
+            <datalist id="directoryDatalist">
+              <!-- Se puebla dinámicamente con el directorio -->
+            </datalist>
+            <small style="display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.8rem;">
+              💡 Escribe tu código personal (ej: <strong>AQ-14</strong>, <strong>AQ-07</strong>, <strong>AQ-06</strong>) o parte de tu correo.
+            </small>
           </div>
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+
+          <!-- Preview dinámico de datos encontrados -->
+          <div id="quickUserPreviewCard" style="display: none; background-color: var(--color-accent-soft); border: 1px solid var(--color-accent); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <strong id="previewUserName" style="color: var(--text-primary); font-size: 0.95rem;">Nombre</strong>
+              <span id="previewUserCode" style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent); background: rgba(235,95,10,0.15); padding: 2px 6px; border-radius: 4px;">AQ-00</span>
+            </div>
+            <div id="previewUserDept" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 2px;">Área</div>
+            <div id="previewUserEmail" style="font-size: 0.82rem; color: var(--text-secondary);">correo@aquachile.com</div>
           </div>
+
           <div style="margin-bottom: 16px;">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text-secondary);">
               <input type="checkbox" id="rememberMeCheckbox" checked>
-              <span>Recordar mis credenciales en este computador</span>
+              <span>Recordar mis datos en este equipo (Autocompletar siempre)</span>
             </label>
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%;" id="btnLoginSubmit">
-            Iniciar Sesión
+          <button type="submit" class="btn-primary" style="width: 100%;" id="btnQuickSubmit">
+            Entrar y Autocompletar 🚀
           </button>
         </form>
 
-        <!-- FORMULARIO REGISTRO -->
+        <!-- FORMULARIO REGISTRO PARA NUEVOS USUARIOS -->
         <form id="formRegister" style="display: none;">
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" for="regName">Nombre Completo <span class="required">*</span></label>
-            <input type="text" id="regName" class="form-control" placeholder="Ej: Marcelo Ramírez" required>
+            <input type="text" id="regName" class="form-control" placeholder="Ej: Juan Pérez" required>
           </div>
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" for="regEmail">Correo Corporativo <span class="required">*</span></label>
-            <input type="email" id="regEmail" class="form-control" placeholder="ejemplo@aquachile.com" required>
+            <input type="email" id="regEmail" class="form-control" placeholder="juan.perez@aquachile.com" required>
           </div>
           <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="regDept">Departamento / Área <span class="required">*</span></label>
+            <input type="text" id="regDept" class="form-control" placeholder="Ej: Logística / Planta Quellón" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
             <label class="form-label" for="regPhone">Teléfono / WhatsApp</label>
             <input type="text" id="regPhone" class="form-control" placeholder="+56 9 1234 5678">
           </div>
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label class="form-label" for="regDept">Departamento / Área</label>
-            <input type="text" id="regDept" class="form-control" placeholder="Ej: Exportaciones / Operaciones">
-          </div>
-          <div class="form-group" style="margin-bottom: 16px;">
-            <label class="form-label" for="regPassword">Crea una Contraseña <span class="required">*</span></label>
-            <input type="password" id="regPassword" class="form-control" placeholder="Mínimo 4 caracteres" required>
-          </div>
           <button type="submit" class="btn-primary" style="width: 100%;" id="btnRegisterSubmit">
-            Crear Cuenta y Guardar
+            Guardar mis Datos y Continuar ✨
           </button>
         </form>
 

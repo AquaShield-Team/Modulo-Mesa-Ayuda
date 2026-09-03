@@ -59,77 +59,126 @@ document.addEventListener("DOMContentLoaded", () => {
   // Modal Auth
   const modalAuth = document.getElementById("modalAuth");
   const btnCloseAuthModal = document.getElementById("btnCloseAuthModal");
-  const authTabLogin = document.getElementById("authTabLogin");
+  const authTabQuick = document.getElementById("authTabQuick");
   const authTabRegister = document.getElementById("authTabRegister");
-  const formLogin = document.getElementById("formLogin");
+  const formQuickAuth = document.getElementById("formQuickAuth");
   const formRegister = document.getElementById("formRegister");
+  const quickInputId = document.getElementById("quickInputId");
+  const quickUserPreviewCard = document.getElementById("quickUserPreviewCard");
+  const previewUserName = document.getElementById("previewUserName");
+  const previewUserCode = document.getElementById("previewUserCode");
+  const previewUserDept = document.getElementById("previewUserDept");
+  const previewUserEmail = document.getElementById("previewUserEmail");
   const rememberMeCheckbox = document.getElementById("rememberMeCheckbox");
 
-  // ── 3. Gestión de Autenticación y Sesión ──────────────────────────────────
-  
-  async function checkAuthSession() {
-    try {
-      // 1. Revisar si hay sesión activa en el servidor
-      let response = await fetch(API_BASE + "/api/auth/me", { credentials: "include" });
-      let data = await response.json();
+  // ── 3. Directorio Corporativo e Identificación Rápida Dual (Código o Correo) ──
+  const CORPORATE_DIRECTORY = [
+    { code: "AQ-05", id: 5, name: "Marcelo Ramirez", email: "marcelo.ramirez@aquachile.com", phone: "+56987634637", department: "Comercio Exterior", role: "admin" },
+    { code: "AQ-06", id: 6, name: "SCANDALOSKY", email: "scandar.mohor@aquachile.com", phone: "+56967886167", department: "COMEX FRESCO", role: "usuario" },
+    { code: "AQ-07", id: 7, name: "JONATHAN ARTURO SANCHEZ MORALES", email: "jonathan.sanchez@aquachile.com", phone: "+56998320009", department: "Comercial", role: "usuario" },
+    { code: "AQ-08", id: 8, name: "Carolina Bastias Parra", email: "carolina.bastias@aquachile.com", phone: "+56994439233", department: "Tecnología", role: "admin" },
+    { code: "AQ-10", id: 10, name: "Marcelo Ramirez", email: "myaquashield@gmail.com", phone: "+56987634637", department: "Big Boss", role: "admin" },
+    { code: "AQ-12", id: 12, name: "Administrador AquaShield", email: "admin@aquachile.com", phone: "", department: "Tecnología & Soporte", role: "admin" },
+    { code: "AQ-13", id: 13, name: "Daphne Priciela Pincol Emmott", email: "daphne.pincol@aquachile.com", phone: "+56 9 5353 9281", department: "COMEX", role: "usuario" },
+    { code: "AQ-14", id: 14, name: "LIBNI EUNICE CONEJEROS MEDINA", email: "libni.conejeros@aquachile.com", phone: "+56961895302", department: "COMEX EUROPA", role: "usuario" }
+  ];
 
-      if (data.authenticated && data.user) {
-        setUserSession(data.user);
-        return;
-      }
+  function getFullDirectory() {
+    const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
+    return [...CORPORATE_DIRECTORY, ...extra];
+  }
 
-      // 2. Si no hay sesión en servidor, revisar si hay credenciales guardadas en localStorage
-      const localUserStr = localStorage.getItem("aquashield_saved_user");
-      if (localUserStr) {
-        try {
-          const localUser = JSON.parse(localUserStr);
-          if (localUser && localUser.email) {
-            // Validar con servidor
-            const r2 = await fetch(API_BASE + `/api/auth/me?email=${encodeURIComponent(localUser.email)}`);
-            const d2 = await r2.json();
-            if (d2.authenticated && d2.user) {
-              setUserSession(d2.user);
-              return;
-            }
-          }
-        } catch (e) {}
-      }
+  function populateDatalist() {
+    const datalist = document.getElementById("directoryDatalist");
+    if (!datalist) return;
+    datalist.innerHTML = "";
+    const all = getFullDirectory();
+    all.forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u.code;
+      opt.label = `${u.name} (${u.department})`;
+      datalist.appendChild(opt);
 
-      // Sin usuario
-      clearUserSession();
-    } catch (err) {
-      console.error("Error al verificar sesión:", err);
-      clearUserSession();
+      const opt2 = document.createElement("option");
+      opt2.value = u.email;
+      opt2.label = `${u.code} · ${u.name}`;
+      datalist.appendChild(opt2);
+    });
+  }
+
+  function findUserInDirectory(val) {
+    if (!val) return null;
+    const clean = val.trim().toLowerCase();
+    const all = getFullDirectory();
+    
+    // 1. Coincidencia exacta de código (ej: aq-14, 14)
+    let found = all.find(u => u.code.toLowerCase() === clean || u.code.toLowerCase().replace("aq-", "") === clean);
+    if (found) return found;
+
+    // 2. Coincidencia exacta de correo
+    found = all.find(u => u.email.toLowerCase() === clean);
+    if (found) return found;
+
+    // 3. Coincidencia parcial de nombre o correo
+    found = all.find(u => u.name.toLowerCase().includes(clean) || u.email.toLowerCase().includes(clean));
+    return found || null;
+  }
+
+  function checkAuthSession() {
+    // Revisar si hay usuario guardado en localStorage (Cero llamadas de red - 100% resiliente)
+    const localUserStr = localStorage.getItem("aquashield_saved_user");
+    if (localUserStr) {
+      try {
+        const localUser = JSON.parse(localUserStr);
+        if (localUser && (localUser.email || localUser.code)) {
+          setUserSession(localUser);
+          return;
+        }
+      } catch (e) {}
     }
+    clearUserSession();
   }
 
   function setUserSession(user) {
     currentUser = user;
     localStorage.setItem("aquashield_saved_user", JSON.stringify(user));
 
-    // Renderizar header
+    const userCode = user.code || ("AQ-" + String(user.id || 99).padStart(2, '0'));
+    const userDept = user.department ? ` (${user.department})` : '';
+
+    // Renderizar chip de usuario en la cabecera
     userHeaderArea.innerHTML = `
-      <div class="user-chip">
-        <div class="user-chip-avatar">${escapeHtml(user.name.charAt(0).toUpperCase())}</div>
-        <span class="user-chip-name" title="${escapeHtml(user.name)} (${escapeHtml(user.email)})">${escapeHtml(user.name)}</span>
-        <button type="button" id="btnLogoutBtn" class="btn-logout-icon" title="Cerrar sesión">✕</button>
+      <div class="user-chip" style="cursor: pointer;" title="Hacer clic para cambiar de usuario">
+        <div class="user-chip-avatar">${escapeHtml((user.name || 'U').charAt(0).toUpperCase())}</div>
+        <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
+          <span class="user-chip-name" style="font-weight: 700;">${escapeHtml(user.name)}</span>
+          <span style="font-size: 0.72rem; color: var(--color-accent); font-weight: 700;">${escapeHtml(userCode)}${escapeHtml(userDept)}</span>
+        </div>
+        <button type="button" id="btnLogoutBtn" class="btn-logout-icon" title="Cambiar de usuario o salir">✕</button>
       </div>
     `;
 
-    document.getElementById("btnLogoutBtn").addEventListener("click", handleLogout);
+    userHeaderArea.querySelector(".user-chip").addEventListener("click", (e) => {
+      if (e.target.id !== "btnLogoutBtn") openAuthModal();
+    });
 
-    // Mostrar acceso al Panel Gestión si es localhost (tu máquina) o si es Administrador
+    document.getElementById("btnLogoutBtn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      clearUserSession();
+    });
+
+    // Mostrar acceso al Panel Gestión si es localhost o Administrador
     const isLocalhost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const adminNavLink = document.getElementById("adminNavLink");
     if (adminNavLink) {
-      adminNavLink.style.display = (isLocalhost || user.role === 'admin') ? 'inline-flex' : 'none';
+      adminNavLink.style.display = (isLocalhost || user.role === 'admin' || user.code === 'AQ-05' || user.code === 'AQ-08') ? 'inline-flex' : 'none';
       if (IS_GH_PAGES) adminNavLink.href = "admin.html";
     }
 
     // Mostrar banner de autocompletado en el formulario
     authAutofillBanner.style.display = "flex";
-    bannerUserName.textContent = user.name;
-    bannerUserEmail.textContent = user.email;
+    bannerUserName.textContent = `${user.name} [${userCode}]`;
+    bannerUserEmail.textContent = `${user.email}${userDept}`;
 
     // Autocompletar campos del formulario
     requesterNameInput.value = user.name;
@@ -153,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     userHeaderArea.innerHTML = `
       <button type="button" id="btnOpenAuthModal" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem;">
-        <span>👤 Iniciar Sesión / Registrarme</span>
+        <span>👤 Identificarme / Mis Datos</span>
       </button>
     `;
 
@@ -163,12 +212,12 @@ document.addEventListener("DOMContentLoaded", () => {
     myTicketsBadgeCount.textContent = "0";
     myTicketsListContainer.innerHTML = `
       <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-        <div style="font-size: 2.2rem; margin-bottom: 8px;">🔒</div>
-        <strong style="color: var(--text-primary); font-size: 1.1rem;">Inicia sesión para ver tu historial</strong>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🆔</div>
+        <strong style="color: var(--text-primary); font-size: 1.1rem;">Identifícate para ver tus solicitudes</strong>
         <p style="margin: 8px auto 16px auto; max-width: 400px; font-size: 0.9rem;">
-          Inicia sesión con tu correo corporativo para consultar todas tus solicitudes en un solo lugar.
+          Ingresa tu código o correo corporativo para autocompletar el formulario y consultar tu historial.
         </p>
-        <button type="button" class="btn-primary" id="btnOpenAuthFromTab">Iniciar Sesión</button>
+        <button type="button" class="btn-primary" id="btnOpenAuthFromTab">Identificarme</button>
       </div>
     `;
 
@@ -176,16 +225,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnTab) btnTab.addEventListener("click", openAuthModal);
   }
 
-  async function handleLogout() {
-    try {
-      await fetch(API_BASE + "/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch (e) {}
-    clearUserSession();
-  }
-
-  // Modal Auth Toggle
   function openAuthModal() {
+    populateDatalist();
+    if (quickInputId) quickInputId.value = "";
+    if (quickUserPreviewCard) quickUserPreviewCard.style.display = "none";
     modalAuth.classList.add("active");
+    if (quickInputId) setTimeout(() => quickInputId.focus(), 100);
   }
 
   function closeAuthModal() {
@@ -196,88 +241,109 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCloseAuthModal) btnCloseAuthModal.addEventListener("click", closeAuthModal);
   if (btnChangeAccount) btnChangeAccount.addEventListener("click", openAuthModal);
 
-  authTabLogin.addEventListener("click", () => {
-    authTabLogin.classList.add("active");
-    authTabRegister.classList.remove("active");
-    formLogin.style.display = "block";
-    formRegister.style.display = "none";
-  });
+  if (authTabQuick && authTabRegister) {
+    authTabQuick.addEventListener("click", () => {
+      authTabQuick.classList.add("active");
+      authTabRegister.classList.remove("active");
+      formQuickAuth.style.display = "block";
+      formRegister.style.display = "none";
+    });
 
-  authTabRegister.addEventListener("click", () => {
-    authTabRegister.classList.add("active");
-    authTabLogin.classList.remove("active");
-    formRegister.style.display = "block";
-    formLogin.style.display = "none";
-  });
+    authTabRegister.addEventListener("click", () => {
+      authTabRegister.classList.add("active");
+      authTabQuick.classList.remove("active");
+      formRegister.style.display = "block";
+      formQuickAuth.style.display = "none";
+    });
+  }
 
-  // Login Submit
-  formLogin.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value.trim();
-    const btn = document.getElementById("btnLoginSubmit");
-
-    try {
-      btn.disabled = true;
-      btn.textContent = "Verificando...";
-
-      const response = await fetch(API_BASE + "/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setUserSession(data.user);
-        closeAuthModal();
+  // Vista previa dinámica mientras escribe código o correo
+  if (quickInputId) {
+    quickInputId.addEventListener("input", () => {
+      const val = quickInputId.value.trim();
+      const matched = findUserInDirectory(val);
+      if (matched) {
+        quickUserPreviewCard.style.display = "block";
+        previewUserName.textContent = matched.name;
+        previewUserCode.textContent = matched.code;
+        previewUserDept.textContent = matched.department || "AquaChile";
+        previewUserEmail.textContent = matched.email;
       } else {
-        alert("Error: " + (data.error || "No se pudo iniciar sesión"));
+        quickUserPreviewCard.style.display = "none";
       }
-    } catch (err) {
-      alert("Error de conexión al iniciar sesión");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Iniciar Sesión";
-    }
-  });
+    });
+  }
 
-  // Register Submit
-  formRegister.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("regName").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const phone = document.getElementById("regPhone").value.trim();
-    const department = document.getElementById("regDept").value.trim();
-    const password = document.getElementById("regPassword").value.trim();
-    const btn = document.getElementById("btnRegisterSubmit");
+  // Envío de Formulario Rápido (Código o Correo)
+  if (formQuickAuth) {
+    formQuickAuth.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const val = quickInputId.value.trim();
+      if (!val) return;
 
-    try {
-      btn.disabled = true;
-      btn.textContent = "Creando cuenta...";
-
-      const response = await fetch(API_BASE + "/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name, email, phone, department, password })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setUserSession(data.user);
+      let user = findUserInDirectory(val);
+      if (user) {
+        setUserSession(user);
         closeAuthModal();
-      } else {
-        alert("Error: " + (data.error || "No se pudo registrar la cuenta"));
+        return;
       }
-    } catch (err) {
-      alert("Error de conexión al registrarse");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Crear Cuenta y Guardar";
-    }
-  });
+
+      // Si no existe en el directorio pero parece un correo corporativo
+      if (val.includes("@")) {
+        const cleanEmail = val.toLowerCase();
+        const baseName = cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+        const newCode = "AQ-" + String(Math.floor(20 + Math.random() * 80));
+        user = {
+          code: newCode,
+          name: baseName,
+          email: cleanEmail,
+          department: "AquaChile",
+          phone: "",
+          role: "usuario"
+        };
+        const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
+        extra.push(user);
+        localStorage.setItem("aquashield_extra_directory", JSON.stringify(extra));
+
+        setUserSession(user);
+        closeAuthModal();
+        return;
+      }
+
+      alert("No se encontró ningún usuario con el código o correo: " + val + ". Puedes usar la pestaña '✨ Nuevo Registro' para crear tu perfil.");
+    });
+  }
+
+  // Envío de Formulario de Nuevo Registro
+  if (formRegister) {
+    formRegister.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const department = document.getElementById("regDept").value.trim();
+      const phone = document.getElementById("regPhone").value.trim();
+
+      const all = getFullDirectory();
+      const newCode = "AQ-" + String(all.length + 10);
+      const newUser = {
+        code: newCode,
+        name: name,
+        email: email,
+        department: department,
+        phone: phone,
+        role: "usuario"
+      };
+
+      const extra = JSON.parse(localStorage.getItem("aquashield_extra_directory") || "[]");
+      extra.push(newUser);
+      localStorage.setItem("aquashield_extra_directory", JSON.stringify(extra));
+
+      setUserSession(newUser);
+      closeAuthModal();
+      alert(`¡Bienvenido/a, ${name}! Tu código de acceso rápido es ${newCode}. Ha quedado guardado en este equipo.`);
+    });
+  }
+
 
   // ── 4. Cargar "Mis Solicitudes" ───────────────────────────────────────────
   async function loadMyTickets() {
