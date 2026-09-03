@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentVal) userSelectPicker.value = currentVal;
   }
 
-  function selectUser(user) {
+  function selectUser(user, shouldFocusPin = false) {
     if (!user) {
       if (selectedUserCard) selectedUserCard.style.display = "none";
       if (pinContainer) pinContainer.style.display = "none";
@@ -159,7 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
       userPinInput.value = "";
       if (changePinSubbox) changePinSubbox.style.display = "none";
       if (userNewPinInput) userNewPinInput.value = "";
-      setTimeout(() => userPinInput.focus(), 80);
+      if (shouldFocusPin) {
+        setTimeout(() => userPinInput.focus(), 80);
+      }
     }
 
     if (btnTeamAuthSubmit) btnTeamAuthSubmit.disabled = false;
@@ -270,9 +272,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (userPinInput) userPinInput.value = "";
     if (userNewPinInput) userNewPinInput.value = "";
     if (changePinSubbox) changePinSubbox.style.display = "none";
-    selectUser(null);
+    selectUser(null, false);
     modalAuth.classList.add("active");
-    if (userSelectPicker) setTimeout(() => userSelectPicker.focus(), 100);
+    if (userNameSearchInput) setTimeout(() => userNameSearchInput.focus(), 100);
   }
 
   function closeAuthModal() {
@@ -304,24 +306,73 @@ document.addEventListener("DOMContentLoaded", () => {
     userSelectPicker.addEventListener("change", () => {
       const email = userSelectPicker.value;
       if (!email) {
-        selectUser(null);
+        selectUser(null, false);
         return;
       }
       const all = getFullDirectory();
       const matched = all.find(u => u.email.toLowerCase() === email.toLowerCase());
-      selectUser(matched);
+      selectUser(matched, true); // Sí enfoca el PIN al seleccionar con mouse
     });
   }
 
-  // Búsqueda en tiempo real por texto
+  // Búsqueda en tiempo real por texto (100% fluida, NUNCA roba el foco al escribir)
   if (userNameSearchInput) {
     userNameSearchInput.addEventListener("input", () => {
       const q = userNameSearchInput.value.trim().toLowerCase();
-      if (!q) return;
       const all = getFullDirectory();
-      const matched = all.find(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-      if (matched) {
-        selectUser(matched);
+
+      if (!q) {
+        populateUserSelect();
+        selectUser(null, false);
+        return;
+      }
+
+      // Filtrar usuarios que coinciden con la búsqueda
+      const filtered = all.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+
+      if (userSelectPicker) {
+        userSelectPicker.innerHTML = "";
+        if (filtered.length === 0) {
+          userSelectPicker.innerHTML = '<option value="">-- No se encontraron coincidencias --</option>';
+          selectUser(null, false);
+          return;
+        }
+
+        const defaultOpt = document.createElement("option");
+        defaultOpt.value = "";
+        defaultOpt.textContent = `-- ${filtered.length} persona(s) encontrada(s) (Elige o sigue escribiendo) --`;
+        userSelectPicker.appendChild(defaultOpt);
+
+        filtered.forEach(u => {
+          const opt = document.createElement("option");
+          opt.value = u.email;
+          opt.textContent = `${u.name} (${u.department})`;
+          userSelectPicker.appendChild(opt);
+        });
+
+        // Si la búsqueda coincide de forma muy cercana con un solo usuario
+        if (filtered.length === 1) {
+          userSelectPicker.value = filtered[0].email;
+          selectUser(filtered[0], false); // Previsualiza sus datos SIN robar el foco del buscador
+        } else {
+          selectUser(null, false);
+        }
+      }
+    });
+
+    // Si presiona Enter en la caja de búsqueda, pasar al PIN
+    userNameSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (pinContainer && pinContainer.style.display !== "none") {
+          userPinInput.focus();
+        } else if (userSelectPicker && userSelectPicker.options.length > 1) {
+          userSelectPicker.selectedIndex = 1;
+          const email = userSelectPicker.value;
+          const all = getFullDirectory();
+          const matched = all.find(u => u.email.toLowerCase() === email.toLowerCase());
+          if (matched) selectUser(matched, true);
+        }
       }
     });
   }

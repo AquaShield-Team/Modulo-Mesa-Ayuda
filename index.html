@@ -375,21 +375,18 @@
 
         <!-- FORMULARIO EQUIPO POR NOMBRE + PIN -->
         <form id="formTeamAuth">
-          <!-- Paso 1: Selección o Búsqueda por Nombre -->
-          <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="userSelectPicker">
-              <span>Selecciona tu Nombre <span class="required">*</span></span>
+          <!-- Paso 1: Búsqueda o Selección por Nombre -->
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" for="userNameSearchInput">
+              <span>🔍 Escribe tu Nombre o Selecciona de la Lista <span class="required">*</span></span>
             </label>
-            <select id="userSelectPicker" class="form-control" style="font-size: 0.92rem; font-weight: 600; padding: 10px 12px; cursor: pointer;">
-              <option value="">-- Elige tu nombre de la lista --</option>
-            </select>
+            <input type="text" id="userNameSearchInput" class="form-control" placeholder="Escribe tu nombre (ej: Cristina, Soraya, Víctor, Marcelo)..." autocomplete="off" style="font-size: 0.95rem; padding: 10px 14px;">
           </div>
 
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="userNameSearchInput" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">
-              <span>O búscalo escribiendo:</span>
-            </label>
-            <input type="text" id="userNameSearchInput" class="form-control" placeholder="🔍 Escribe parte de tu nombre (ej: Cristina, Soraya, Víctor)..." autocomplete="off" style="font-size: 0.86rem;">
+            <select id="userSelectPicker" class="form-control" style="font-size: 0.88rem; font-weight: 600; padding: 8px 12px; cursor: pointer;">
+              <option value="">-- O elige directamente de la lista completa --</option>
+            </select>
           </div>
 
           <!-- Tarjeta de Confirmación de Perfil -->
