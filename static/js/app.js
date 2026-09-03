@@ -485,7 +485,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── 4. Cargar "Mis Solicitudes" ───────────────────────────────────────────
+  // ── 4. Cargar "Mis Solicitudes" (Resiliente 100% Offline-First) ───────────
+  let cachedAllTickets = [];
+
   async function loadMyTickets() {
     if (!currentUser) return;
 
@@ -498,57 +500,67 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      const response = await fetch(API_BASE + `/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, {
-        credentials: "include"
-      });
-      const data = await response.json();
+      let serverTickets = [];
+      let fetchSuccess = false;
 
-      if (data.success) {
-        // Auto-sincronizar requerimientos de la bandeja de espera pendientes
-        if (offlineList.length > 0) {
-          for (let i = offlineList.length - 1; i >= 0; i--) {
-            const off = offlineList[i];
-            try {
-              const fd = new FormData();
-              fd.set("requester_name", off.requester_name);
-              fd.set("requester_email", off.requester_email);
-              fd.set("requester_phone", off.requester_phone);
-              fd.set("module_name", off.module_name);
-              fd.set("type", off.type);
-              fd.set("priority", off.priority);
-              fd.set("title", off.title);
-              fd.set("description", off.description);
-              if (currentUser && currentUser.id) fd.set("user_id", currentUser.id);
-
-              const sRes = await fetch(API_BASE + "/api/tickets", { method: "POST", body: fd, credentials: "include" });
-              const sData = await sRes.json();
-              if (sData.success) {
-                offlineList.splice(i, 1);
-              }
-            } catch (sErr) {}
-          }
-          localStorage.setItem("aquashield_offline_tickets", JSON.stringify(offlineList));
-          
-          const r2 = await fetch(API_BASE + `/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, { credentials: "include" });
-          const d2 = await r2.json();
-          if (d2.success) data.tickets = d2.tickets;
+      // 1. Intentar conectar a la API del backend si responde
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const response = await fetch(API_BASE + `/api/my-tickets?email=${encodeURIComponent(currentUser.email)}`, {
+          credentials: "include",
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.tickets)) {
+          serverTickets = data.tickets;
+          fetchSuccess = true;
         }
-
-        const serverTickets = data.tickets || [];
-        const allTickets = [...offlineList, ...serverTickets];
-        myTicketsBadgeCount.textContent = allTickets.length;
-        renderMyTicketsList(allTickets);
-      } else {
-        myTicketsListContainer.innerHTML = `
-          <div style="text-align: center; padding: 20px; color: #D32F2F;">
-            Error al obtener solicitudes: ${data.error}
-          </div>
-        `;
+      } catch (e) {
+        // Backend en reposo o sin túnel
       }
+
+      // 2. Si la API no respondió (GitHub Pages / Offline), consultar tickets.json publicado en el repo
+      if (!fetchSuccess) {
+        try {
+          const ghRes = await fetch("static/data/tickets.json?v=" + Date.now());
+          if (ghRes.ok) {
+            const allGhTickets = await ghRes.json();
+            cachedAllTickets = allGhTickets;
+            const myEmail = (currentUser.email || "").trim().toLowerCase();
+            const myName = (currentUser.name || "").trim().toLowerCase();
+
+            serverTickets = allGhTickets.filter(t => {
+              const tEmail = (t.requester_email || "").trim().toLowerCase();
+              const tName = (t.requester_name || "").trim().toLowerCase();
+              return (myEmail && tEmail === myEmail) || (myName && tName.includes(myName));
+            });
+            fetchSuccess = true;
+          }
+        } catch (ghErr) {
+          console.warn("No se pudo cargar tickets.json:", ghErr);
+        }
+      }
+
+      // 3. Filtrar requerimientos guardados en este navegador para este usuario
+      const myOffline = offlineList.filter(t => {
+        const tEmail = (t.requester_email || "").toLowerCase();
+        return tEmail === (currentUser.email || "").toLowerCase();
+      });
+
+      // Combinar y renderizar
+      const allMyTickets = [...myOffline, ...serverTickets];
+      myTicketsBadgeCount.textContent = allMyTickets.length;
+      renderMyTicketsList(allMyTickets);
+
     } catch (err) {
-      console.warn("Servidor fuera de línea. Mostrando solicitudes en bandeja de espera...", err);
-      myTicketsBadgeCount.textContent = offlineList.length;
-      renderMyTicketsList(offlineList);
+      console.warn("Error al cargar historial:", err);
+      const myOffline = offlineList.filter(t => {
+        return (t.requester_email || "").toLowerCase() === (currentUser.email || "").toLowerCase();
+      });
+      myTicketsBadgeCount.textContent = myOffline.length;
+      renderMyTicketsList(myOffline);
     }
   }
 
@@ -1228,16 +1240,33 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedCsatRating = 5;
 
   window.openUserTicketDetail = async function(ticketIdOrCode) {
+    let t = null;
     try {
-      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(ticketIdOrCode)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(ticketIdOrCode)}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await response.json();
-      if (!data.success || !data.ticket) {
-        alert("No se pudo cargar el detalle del ticket");
-        return;
+      if (data.success && data.ticket) {
+        t = data.ticket;
       }
+    } catch (e) {}
 
-      currentDetailTicket = data.ticket;
-      const t = currentDetailTicket;
+    // Si falló la API, buscar en tickets estáticos o en la bandeja local
+    if (!t) {
+      const offlineList = JSON.parse(localStorage.getItem("aquashield_offline_tickets") || "[]");
+      t = offlineList.find(x => String(x.id) === String(ticketIdOrCode) || x.code === ticketIdOrCode);
+      if (!t && cachedAllTickets.length > 0) {
+        t = cachedAllTickets.find(x => String(x.id) === String(ticketIdOrCode) || x.code === ticketIdOrCode);
+      }
+    }
+
+    if (!t) {
+      alert("No se pudo cargar el detalle del requerimiento.");
+      return;
+    }
+
+    currentDetailTicket = t;
       const st = statusConfig[t.status] || { label: t.status, class: "abierto", icon: "📌" };
 
       userModalCode.textContent = t.code;

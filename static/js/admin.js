@@ -587,21 +587,31 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── 3. Cargar KPIs y Módulos de Filtro ────────────────────────────────────
   async function loadKPIs() {
     try {
-      const response = await fetch(API_BASE + "/api/stats");
-      const data = await response.json();
-      if (data.success) {
-        kpiTotal.textContent = data.stats.total || 0;
-        kpiAbiertos.textContent = data.stats.abierto || 0;
-        kpiProceso.textContent = data.stats.en_proceso || 0;
-        kpiResueltos.textContent = data.stats.resuelto || 0;
-
-        // Comprobar si hay nuevo ticket para emitir sonido y notificación
-        const currentOpen = data.stats.abierto || 0;
-        if (previousOpenCount !== null && currentOpen > previousOpenCount) {
-          playChimeSound();
-          showDesktopNotification();
+      let kpisLoaded = false;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch(API_BASE + "/api/stats", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success) {
+          kpiTotal.textContent = data.stats.total || 0;
+          kpiAbiertos.textContent = data.stats.abierto || 0;
+          kpiProceso.textContent = data.stats.en_proceso || 0;
+          kpiResueltos.textContent = data.stats.resuelto || 0;
+          kpisLoaded = true;
         }
-        previousOpenCount = currentOpen;
+      } catch (e) {}
+
+      if (!kpisLoaded && cachedTicketsList.length > 0) {
+        const total = cachedTicketsList.length;
+        const abiertos = cachedTicketsList.filter(t => t.status === "abierto").length;
+        const proceso = cachedTicketsList.filter(t => ["en_analisis", "en_desarrollo"].includes(t.status)).length;
+        const resueltos = cachedTicketsList.filter(t => t.status === "resuelto").length;
+        kpiTotal.textContent = total;
+        kpiAbiertos.textContent = abiertos;
+        kpiProceso.textContent = proceso;
+        kpiResueltos.textContent = resueltos;
       }
 
       // Cargar SLA y CSAT desde analíticas
@@ -662,20 +672,35 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadFilterModules() {
     try {
       const currentSelected = filterModule.value;
-      const response = await fetch(API_BASE + "/api/modules");
-      const data = await response.json();
-      if (data.success) {
-        filterModule.innerHTML = '<option value="todos">Todos los Módulos</option>';
-        data.modules.forEach(m => {
-          const opt = document.createElement("option");
-          opt.value = m.id;
-          opt.textContent = m.name;
-          if (currentSelected && currentSelected == m.id) {
-            opt.selected = true;
-          }
-          filterModule.appendChild(opt);
-        });
-      }
+      const DEFAULT_MODULES = [
+        { id: 1, name: "Módulo Congelado" }, { id: 2, name: "Módulo Fresco" },
+        { id: 3, name: "Módulo Proformas" }, { id: 4, name: "Módulo Seguros" },
+        { id: 5, name: "Módulo ExportDesk" }, { id: 7, name: "Agente Correos" },
+        { id: 8, name: "Módulo Termógrafo" }, { id: 9, name: "Módulo Validador HC" },
+        { id: 10, name: "Módulo Invoice Converter" }, { id: 11, name: "Módulo ISF" },
+        { id: 13, name: "Módulo Carga Neppex" }, { id: 14, name: "Módulo LabelInspect" },
+        { id: 18, name: "Otro / General" }
+      ];
+      let mods = DEFAULT_MODULES;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch(API_BASE + "/api/modules", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success && data.modules && data.modules.length > 0) mods = data.modules;
+      } catch (e) {}
+
+      filterModule.innerHTML = '<option value="todos">Todos los Módulos</option>';
+      mods.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.name;
+        if (currentSelected && currentSelected == m.id) {
+          opt.selected = true;
+        }
+        filterModule.appendChild(opt);
+      });
     } catch (err) {
       console.error("Error al cargar módulos de filtro:", err);
     }
@@ -717,21 +742,43 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
 
-      const response = await fetch(API_BASE + `/api/tickets?${params.toString()}`);
-      const data = await response.json();
+      let tickets = [];
+      let loaded = false;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const response = await fetch(API_BASE + `/api/tickets?${params.toString()}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.tickets)) {
+          tickets = data.tickets;
+          loaded = true;
+        }
+      } catch (e) {}
 
-      if (data.success) {
-        cachedTicketsList = data.tickets || [];
+      if (!loaded) {
+        try {
+          const ghRes = await fetch("static/data/tickets.json?v=" + Date.now());
+          if (ghRes.ok) {
+            tickets = await ghRes.json();
+            loaded = true;
+          }
+        } catch (ghErr) {}
+      }
+
+      if (loaded) {
+        cachedTicketsList = tickets;
         if (currentViewMode === "kanban") {
           renderKanban(cachedTicketsList);
         } else {
           renderTicketsTable(cachedTicketsList);
         }
+        loadKPIs();
       } else if (!isSilent) {
         ticketsTableBody.innerHTML = `
           <tr>
             <td colspan="11" style="text-align: center; padding: 30px; color: #D32F2F;">
-              Error al obtener tickets: ${data.error || "Error desconocido"}
+              No se pudieron obtener tickets del servidor ni de GitHub.
             </td>
           </tr>
         `;
