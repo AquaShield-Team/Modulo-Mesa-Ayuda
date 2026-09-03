@@ -334,10 +334,14 @@
               <span id="modalAttachmentCount" style="font-size: 0.8rem; background-color: var(--color-accent-soft); color: var(--color-accent); padding: 2px 8px; border-radius: 10px;">0</span>
             </h4>
 
-            <!-- BOTÓN DESTACADO DESCARGAR ZIP -->
-            <a id="btnDownloadZip" href="#" class="btn-zip" style="text-decoration: none;">
-              <span>📦 Descargar Todos (.ZIP)</span>
-            </a>
+            <!-- BOTONES ADJUNTOS -->
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="file" id="adminAddAttachmentInput" multiple style="display: none;">
+              <button type="button" id="btnAdminAddAttachment" class="btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;">+ Subir Adjunto</button>
+              <a id="btnDownloadZip" href="#" class="btn-zip" style="text-decoration: none;">
+                <span>📦 Descargar Todos (.ZIP)</span>
+              </a>
+            </div>
           </div>
 
           <!-- Lista de Archivos Adjuntos con botón individual de descarga -->

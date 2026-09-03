@@ -1022,6 +1022,43 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
 
+      const btnAdminAddAttachment = document.getElementById("btnAdminAddAttachment");
+      const adminAddAttachmentInput = document.getElementById("adminAddAttachmentInput");
+      if (btnAdminAddAttachment && adminAddAttachmentInput) {
+        btnAdminAddAttachment.onclick = () => adminAddAttachmentInput.click();
+        adminAddAttachmentInput.onchange = async () => {
+          if (!adminAddAttachmentInput.files.length) return;
+          const fd = new FormData();
+          for (let f of adminAddAttachmentInput.files) {
+            fd.append("files[]", f);
+          }
+          btnAdminAddAttachment.textContent = "⏳ Subiendo...";
+          btnAdminAddAttachment.disabled = true;
+          try {
+            const resp = await fetch(API_BASE + `/api/tickets/${t.id}/attachments`, {
+              method: "POST",
+              body: fd,
+              credentials: "include"
+            });
+            const data = await resp.json();
+            if (data.success && data.attachments) {
+              if (!t.attachments) t.attachments = [];
+              t.attachments.push(...data.attachments);
+              openTicketDetailModal(t.id);
+              alert("¡Archivo(s) subido(s) con éxito al ticket!");
+            } else {
+              alert("Error al subir archivo: " + (data.error || ""));
+            }
+          } catch (e) {
+            alert("Error de conexión al subir el archivo.");
+          } finally {
+            btnAdminAddAttachment.textContent = "+ Subir Adjunto";
+            btnAdminAddAttachment.disabled = false;
+            adminAddAttachmentInput.value = "";
+          }
+        };
+      }
+
       const logs = t.logs || [];
       if (logs.length > 0) {
         modalLogsList.innerHTML = logs.map(l => `

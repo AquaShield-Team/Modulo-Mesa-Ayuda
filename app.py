@@ -760,6 +760,48 @@ def download_single_attachment(ticket_id, attachment_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/tickets/<identifier>/attachments", methods=["POST"])
+def upload_ticket_attachment_endpoint(identifier):
+    try:
+        ticket = database.get_ticket_by_id_or_code(identifier)
+        if not ticket:
+            return jsonify({"success": False, "error": "Ticket no encontrado"}), 404
+
+        uploaded_files = request.files.getlist("attachments") or request.files.getlist("files[]") or request.files.getlist("file")
+        if not uploaded_files:
+            return jsonify({"success": False, "error": "No se recibieron archivos"}), 400
+
+        ticket_upload_dir = os.path.join(app.config["UPLOAD_FOLDER"], ticket["code"])
+        os.makedirs(ticket_upload_dir, exist_ok=True)
+
+        added_attachments = []
+        for file in uploaded_files:
+            if file and file.filename and file.filename.strip():
+                orig_name = os.path.basename(file.filename)
+                safe_name = secure_filename(orig_name) or "adjunto"
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                stored_name = f"{timestamp}_{safe_name}"
+                disk_path = os.path.join(ticket_upload_dir, stored_name)
+                file.save(disk_path)
+
+                file_size = os.path.getsize(disk_path)
+                mime_type = mimetypes.guess_type(disk_path)[0] or "application/octet-stream"
+                rel_path = os.path.relpath(disk_path, BASE_DIR)
+
+                att = database.add_attachment(
+                    ticket_id=ticket["id"],
+                    original_name=orig_name,
+                    stored_name=stored_name,
+                    file_size=file_size,
+                    mime_type=mime_type,
+                    file_path=rel_path
+                )
+                added_attachments.append(att)
+
+        return jsonify({"success": True, "attachments": added_attachments}), 201
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/tickets/<int:ticket_id>/download-zip", methods=["GET"])
 def download_ticket_zip(ticket_id):
     try:

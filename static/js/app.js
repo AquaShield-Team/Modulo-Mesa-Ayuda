@@ -1470,7 +1470,35 @@ ${fullDescription}
   const userChatCountBadge = document.getElementById("userChatCountBadge");
 
   let currentDetailTicket = null;
-  let selectedCsatRating = 5;
+  function renderUserModalAttachments(t) {
+    if (!userModalAttachmentsContainer || !userModalAttachmentsList) return;
+    if (t.attachments && t.attachments.length > 0) {
+      userModalAttachmentsContainer.style.display = "block";
+      userModalAttachmentsList.innerHTML = t.attachments.map(att => `
+        <div class="attachment-item" style="justify-content: space-between;">
+          <div class="attachment-info">
+            <span class="attachment-icon">${getFileIcon(att.original_name)}</span>
+            <span class="attachment-name" style="max-width: 180px;" title="${escapeHtml(att.original_name)}">${escapeHtml(att.original_name)}</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-secondary btn-user-preview-att" data-url="/api/tickets/${t.id}/attachments/${att.id}/download" data-name="${escapeHtml(att.original_name)}" data-mime="${att.mime_type || ''}" style="padding: 3px 8px; font-size: 0.75rem;" title="Ver archivo">👁️ Ver</button>
+            <a href="/api/tickets/${t.id}/attachments/${att.id}/download" class="btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; text-decoration: none;" title="Descargar archivo">⬇️</a>
+          </div>
+        </div>
+      `).join("");
+
+      userModalAttachmentsList.querySelectorAll(".btn-user-preview-att").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const url = btn.getAttribute("data-url");
+          const name = btn.getAttribute("data-name");
+          const mime = btn.getAttribute("data-mime");
+          openLightbox(url, name, mime);
+        });
+      });
+    } else {
+      userModalAttachmentsList.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-secondary);">No hay archivos adjuntos en esta solicitud aún.</span>`;
+    }
+  }
 
   window.openUserTicketDetail = async function(ticketIdOrCode) {
     try {
@@ -1528,31 +1556,44 @@ ${fullDescription}
       userModalDescription.textContent = t.description;
 
       // Adjuntos
-      if (t.attachments && t.attachments.length > 0) {
-        userModalAttachmentsContainer.style.display = "block";
-        userModalAttachmentsList.innerHTML = t.attachments.map(att => `
-          <div class="attachment-item" style="justify-content: space-between;">
-            <div class="attachment-info">
-              <span class="attachment-icon">${getFileIcon(att.original_name)}</span>
-              <span class="attachment-name" style="max-width: 180px;" title="${att.original_name}">${att.original_name}</span>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button type="button" class="btn-secondary btn-user-preview-att" data-url="/api/tickets/${t.id}/attachments/${att.id}/download" data-name="${att.original_name}" data-mime="${att.mime_type || ''}" style="padding: 3px 8px; font-size: 0.75rem;" title="Ver archivo">👁️ Ver</button>
-              <a href="/api/tickets/${t.id}/attachments/${att.id}/download" class="btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; text-decoration: none;" title="Descargar archivo">⬇️</a>
-            </div>
-          </div>
-        `).join("");
+      renderUserModalAttachments(t);
 
-        userModalAttachmentsList.querySelectorAll(".btn-user-preview-att").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const url = btn.getAttribute("data-url");
-            const name = btn.getAttribute("data-name");
-            const mime = btn.getAttribute("data-mime");
-            openLightbox(url, name, mime);
-          });
-        });
-      } else {
-        userModalAttachmentsContainer.style.display = "none";
+      const btnUserAddAttachment = document.getElementById("btnUserAddAttachment");
+      const userAddAttachmentInput = document.getElementById("userAddAttachmentInput");
+      if (btnUserAddAttachment && userAddAttachmentInput) {
+        btnUserAddAttachment.onclick = () => userAddAttachmentInput.click();
+        userAddAttachmentInput.onchange = async () => {
+          if (!userAddAttachmentInput.files.length) return;
+          const fd = new FormData();
+          for (let f of userAddAttachmentInput.files) {
+            fd.append("files[]", f);
+          }
+          fd.append("author_name", currentUser ? currentUser.name : t.requester_name);
+          btnUserAddAttachment.textContent = "⏳ Subiendo...";
+          btnUserAddAttachment.disabled = true;
+          try {
+            const resp = await fetch(API_BASE + `/api/tickets/${t.id}/attachments`, {
+              method: "POST",
+              body: fd,
+              credentials: "include"
+            });
+            const data = await resp.json();
+            if (data.success && data.attachments) {
+              if (!t.attachments) t.attachments = [];
+              t.attachments.push(...data.attachments);
+              renderUserModalAttachments(t);
+              alert("¡Archivo(s) subido(s) exitosamente!");
+            } else {
+              alert("Error al subir archivo: " + (data.error || ""));
+            }
+          } catch (e) {
+            alert("Error de conexión al subir el archivo.");
+          } finally {
+            btnUserAddAttachment.textContent = "+ Adjuntar Archivo";
+            btnUserAddAttachment.disabled = false;
+            userAddAttachmentInput.value = "";
+          }
+        };
       }
 
       // Solución / Notas del Admin
