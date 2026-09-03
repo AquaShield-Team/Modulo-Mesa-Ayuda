@@ -123,9 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("aquashield_user_pins", JSON.stringify(customPins));
   }
 
-  function populateUserSelect() {
+  function populateUserSelect(preferredEmail = null) {
     if (!userSelectPicker) return;
-    const currentVal = userSelectPicker.value;
     userSelectPicker.innerHTML = '<option value="">-- Elige tu nombre de la lista --</option>';
     const all = getFullDirectory();
     all.forEach(u => {
@@ -134,7 +133,13 @@ document.addEventListener("DOMContentLoaded", () => {
       opt.textContent = `${u.name} (${u.department})`;
       userSelectPicker.appendChild(opt);
     });
-    if (currentVal) userSelectPicker.value = currentVal;
+    if (preferredEmail) {
+      userSelectPicker.value = preferredEmail;
+      const user = all.find(u => u.email.toLowerCase() === preferredEmail.toLowerCase());
+      if (user) selectUser(user, false);
+    } else {
+      userSelectPicker.value = "";
+    }
   }
 
   function selectUser(user, shouldFocusPin = false) {
@@ -267,12 +272,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openAuthModal() {
-    populateUserSelect();
+    selectUser(null, false);
+    populateUserSelect(null);
     if (userNameSearchInput) userNameSearchInput.value = "";
     if (userPinInput) userPinInput.value = "";
     if (userNewPinInput) userNewPinInput.value = "";
     if (changePinSubbox) changePinSubbox.style.display = "none";
-    selectUser(null, false);
     modalAuth.classList.add("active");
     if (userNameSearchInput) setTimeout(() => userNameSearchInput.focus(), 100);
   }
@@ -301,9 +306,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Cambio en el desplegable de nombres
+  // Cambio en el desplegable de nombres (Mantiene sincronizado el estado del PIN y la tarjeta)
   if (userSelectPicker) {
-    userSelectPicker.addEventListener("change", () => {
+    const handlePickerChange = () => {
       const email = userSelectPicker.value;
       if (!email) {
         selectUser(null, false);
@@ -312,7 +317,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const all = getFullDirectory();
       const matched = all.find(u => u.email.toLowerCase() === email.toLowerCase());
       selectUser(matched, true); // Sí enfoca el PIN al seleccionar con mouse
-    });
+    };
+    userSelectPicker.addEventListener("change", handlePickerChange);
+    userSelectPicker.addEventListener("input", handlePickerChange);
   }
 
   // Búsqueda en tiempo real por texto (100% fluida, NUNCA roba el foco al escribir)
@@ -403,7 +410,19 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Si el PIN o la tarjeta estaban ocultos, activarlos y enfocar el PIN
+      if (!pinContainer || pinContainer.style.display === "none") {
+        selectUser(user, true);
+        return;
+      }
+
       const enteredPin = userPinInput.value.trim();
+      if (!enteredPin) {
+        alert("Por favor ingresa tu PIN personal de 4 dígitos (PIN inicial por defecto: 2026).");
+        userPinInput.focus();
+        return;
+      }
+
       const correctPin = getUserPin(user.email);
 
       if (enteredPin !== correctPin) {
