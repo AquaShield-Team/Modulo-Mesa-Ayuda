@@ -546,66 +546,24 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const stayOnGh = sessionStorage.getItem("aquashield_stay_gh") === "true";
-
-    if (stayOnGh) {
-      networkStatusBanner.innerHTML = `
-        <div style="background: rgba(230,81,0,0.06); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-primary);">
-            <span>🌐</span>
-            <span><strong>Modo Fuera de Red / Sin VPN:</strong> Solicitudes se respaldan en tu equipo y se despachan por Teams o Correo.</span>
-          </div>
-          <a href="http://PM-COME-N255:5050" class="btn-secondary" style="padding: 4px 12px; font-size: 0.78rem; text-decoration: none;">⚡ ¿Conectaste VPN? Ir a Servidor Central</a>
-        </div>
-      `;
-      return;
-    }
-
-    // Auto-redirección limpia a la Mesa Central con cuenta regresiva visible de 1 segundo
-    let countdown = 1;
     networkStatusBanner.innerHTML = `
-      <div style="background: rgba(46,125,50,0.12); border: 2px solid #2E7D32; border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="background: rgba(30,136,229,0.08); border: 1.5px solid var(--color-primary); border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.6rem;">🟢</span>
+          <span style="font-size: 1.5rem;">🏢</span>
           <div>
-            <div style="font-weight: 700; color: #2E7D32; font-size: 0.95rem;">
-              Conectando con la Mesa de Ayuda Central AquaChile...
+            <div style="font-weight: 700; color: var(--color-primary); font-size: 0.94rem;">
+              Portal Web Mesa de Ayuda · AquaShield Hub
             </div>
-            <div style="font-size: 0.83rem; color: var(--text-primary); margin-top: 2px;">
-              Redirigiendo a <strong>http://PM-COME-N255:5050</strong> en <strong id="autoRedirectTimer" style="color: #2E7D32; font-size: 1rem;">${countdown}</strong> segundo...
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+              Canal Oficial de Soporte y Desarrollo de Comercio Exterior | Conexión Segura SSL
             </div>
           </div>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <a href="http://PM-COME-N255:5050" class="btn-primary" style="background: #2E7D32; border-color: #2E7D32; padding: 7px 16px; font-size: 0.84rem; text-decoration: none;">
-            ⚡ Entrar Ahora
-          </a>
-          <button type="button" id="btnCancelAutoRedirect" class="btn-secondary" style="padding: 7px 12px; font-size: 0.82rem;">
-            Estoy sin VPN (Quedarme aquí)
-          </button>
-        </div>
+        <span style="font-size: 0.78rem; color: var(--color-primary); background: rgba(30,136,229,0.12); padding: 4px 12px; border-radius: 12px; font-weight: 700;">
+          🔒 Conexión Cifrada Activa
+        </span>
       </div>
     `;
-
-    const timerSpan = document.getElementById("autoRedirectTimer");
-    const cancelBtn = document.getElementById("btnCancelAutoRedirect");
-
-    const countdownTimer = setInterval(() => {
-      countdown--;
-      if (timerSpan) timerSpan.textContent = countdown;
-      if (countdown <= 0) {
-        clearInterval(countdownTimer);
-        window.location.replace("http://PM-COME-N255:5050");
-      }
-    }, 1000);
-
-    if (cancelBtn) {
-      cancelBtn.addEventListener("click", () => {
-        clearInterval(countdownTimer);
-        sessionStorage.setItem("aquashield_stay_gh", "true");
-        renderNetworkStatusBanner();
-      });
-    }
   }
   renderNetworkStatusBanner();
 
