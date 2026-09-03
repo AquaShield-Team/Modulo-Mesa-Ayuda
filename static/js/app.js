@@ -1099,11 +1099,33 @@ document.addEventListener("DOMContentLoaded", () => {
       btnTrackTicket.disabled = true;
       btnTrackTicket.textContent = "Buscando...";
 
-      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(code)}`);
-      const data = await response.json();
+      let ticket = null;
 
-      if (data.success) {
-        renderTrackingResult(data.ticket);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(code)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success && data.ticket) ticket = data.ticket;
+      } catch (e) {}
+
+      if (!ticket) {
+        const offlineList = JSON.parse(localStorage.getItem("aquashield_offline_tickets") || "[]");
+        ticket = offlineList.find(x => (x.code || "").toUpperCase() === code.toUpperCase());
+        if (!ticket) {
+          try {
+            const ghRes = await fetch("static/data/tickets.json?v=" + Date.now());
+            if (ghRes.ok) {
+              const allGh = await ghRes.json();
+              ticket = allGh.find(x => (x.code || "").toUpperCase() === code.toUpperCase());
+            }
+          } catch (ghE) {}
+        }
+      }
+
+      if (ticket) {
+        renderTrackingResult(ticket);
       } else {
         trackResultContainer.style.display = "block";
         trackResultContainer.innerHTML = `
@@ -1240,17 +1262,18 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedCsatRating = 5;
 
   window.openUserTicketDetail = async function(ticketIdOrCode) {
-    let t = null;
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
-      const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(ticketIdOrCode)}`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      const data = await response.json();
-      if (data.success && data.ticket) {
-        t = data.ticket;
-      }
-    } catch (e) {}
+      let t = null;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const response = await fetch(API_BASE + `/api/tickets/${encodeURIComponent(ticketIdOrCode)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data.success && data.ticket) {
+          t = data.ticket;
+        }
+      } catch (e) {}
 
     // Si falló la API, buscar en tickets estáticos o en la bandeja local
     if (!t) {
