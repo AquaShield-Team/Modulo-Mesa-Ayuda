@@ -678,16 +678,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const navLinkSolicitudes = document.getElementById("navLinkSolicitudes");
-  if (navLinkSolicitudes) {
-    if (IS_GH_PAGES) navLinkSolicitudes.href = "index.html";
-    navLinkSolicitudes.addEventListener("click", (e) => {
-      e.preventDefault();
-      const tabNuevoBtn = document.querySelector('.aq-tab-btn[data-tab="tab-nuevo"]');
-      if (tabNuevoBtn) tabNuevoBtn.click();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
 
   // ── 6. Cargar Módulos Oficiales (Resiliente 100% Offline-First) ─────────
   const moduleSelect = document.getElementById("module_select");
