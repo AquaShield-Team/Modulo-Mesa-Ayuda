@@ -2764,3 +2764,165 @@ document.addEventListener("DOMContentLoaded", () => {
   loadTickets();
   setupAutoRefresh();
 });
+
+
+  // ── Importar Ticket desde Texto de Teams / Correo ────────────────────────
+  const btnOpenPasteTicketModal = document.getElementById("btnOpenPasteTicketModal");
+  const modalPasteTicket = document.getElementById("modalPasteTicket");
+  const btnClosePasteModal = document.getElementById("btnClosePasteModal");
+  const btnCancelPasteTicket = document.getElementById("btnCancelPasteTicket");
+  const pasteTicketTextarea = document.getElementById("pasteTicketTextarea");
+  const pasteTicketPreview = document.getElementById("pasteTicketPreview");
+  const pastePreviewDetails = document.getElementById("pastePreviewDetails");
+  const btnSubmitPastedTicket = document.getElementById("btnSubmitPastedTicket");
+
+  function parseTicketText(raw) {
+    const data = {
+      requester_name: "Colaborador COMEX",
+      requester_email: "marcelo.ramirez@aquachile.com",
+      requester_phone: "",
+      module_name: "Módulo Congelado",
+      type: "problema",
+      priority: "media",
+      title: "",
+      description: raw.trim(),
+      wait_code: ""
+    };
+
+    if (!raw.trim()) return data;
+
+    // Código
+    const mCode = raw.match(/TKT-WAIT-[\w-]+/i);
+    if (mCode) data.wait_code = mCode[0].toUpperCase();
+
+    // Solicitante y Email
+    const mSol = raw.match(/Solicitante:?\*?\s*([^(]+?)(?:\(([^)]+)\))?(?:\n|$)/i);
+    if (mSol) {
+      data.requester_name = mSol[1].replace(/[*_]/g, "").trim();
+      if (mSol[2]) data.requester_email = mSol[2].trim();
+    } else {
+      const mMail = raw.match(/([a-zA-Z0-9._%+-]+@aquachile\.com)/i);
+      if (mMail) data.requester_email = mMail[1].toLowerCase();
+    }
+
+    // Teléfono
+    const mPhone = raw.match(/(?:Contacto|Tel[eé]fono):?\*?\s*([+\d\s-]+)/i);
+    if (mPhone) data.requester_phone = mPhone[1].trim();
+
+    // Módulo
+    const mMod = raw.match(/M[oó]dulo(?:\s+Afectado)?:?\*?\s*([^*|\n]+)/i);
+    if (mMod) data.module_name = mMod[1].replace(/[*_]/g, "").trim();
+
+    // Tipo
+    const mTipo = raw.match(/Tipo:?\*?\s*([^*|\n]+)/i);
+    if (mTipo) {
+      const tStr = mTipo[1].toLowerCase();
+      if (tStr.includes("mejora")) data.type = "mejora";
+      else if (tStr.includes("nueva") || tStr.includes("funcionalidad")) data.type = "nueva_funcionalidad";
+      else if (tStr.includes("acceso") || tStr.includes("permiso")) data.type = "acceso";
+      else data.type = "problema";
+    }
+
+    // Prioridad
+    const mPrio = raw.match(/Prioridad:?\*?\s*([^*|\n]+)/i);
+    if (mPrio) {
+      const pStr = mPrio[1].toLowerCase();
+      if (pStr.includes("urgente") || pStr.includes("critica")) data.priority = "urgente";
+      else if (pStr.includes("alta")) data.priority = "alta";
+      else if (pStr.includes("baja")) data.priority = "baja";
+      else data.priority = "media";
+    }
+
+    // Título
+    const mTit = raw.match(/T[ií]tulo:?\*?\s*([^*\n]+)/i);
+    if (mTit) {
+      data.title = mTit[1].replace(/[*_]/g, "").trim();
+    } else {
+      // Tomar primera línea significativa como título
+      const lines = raw.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("=") && !l.startsWith("-"));
+      data.title = lines[0] ? lines[0].substring(0, 70) : "Requerimiento importado de Teams";
+    }
+
+    // Descripción
+    const mDesc = raw.match(/(?:Descripci[oó]n(?:\s+del\s+caso)?:?|Detalle:?\*?)\s*([\s\S]+?)(?:={5,}|$)/i);
+    if (mDesc) {
+      data.description = mDesc[1].trim();
+    }
+
+    return data;
+  }
+
+  if (btnOpenPasteTicketModal && modalPasteTicket) {
+    btnOpenPasteTicketModal.addEventListener("click", () => {
+      pasteTicketTextarea.value = "";
+      pasteTicketPreview.style.display = "none";
+      modalPasteTicket.classList.add("active");
+      pasteTicketTextarea.focus();
+    });
+
+    const closePasteModal = () => modalPasteTicket.classList.remove("active");
+    if (btnClosePasteModal) btnClosePasteModal.addEventListener("click", closePasteModal);
+    if (btnCancelPasteTicket) btnCancelPasteTicket.addEventListener("click", closePasteModal);
+
+    pasteTicketTextarea.addEventListener("input", () => {
+      const raw = pasteTicketTextarea.value.trim();
+      if (!raw) {
+        pasteTicketPreview.style.display = "none";
+        return;
+      }
+      const p = parseTicketText(raw);
+      pasteTicketPreview.style.display = "block";
+      pastePreviewDetails.innerHTML = `
+        <div>👤 <strong>Solicitante:</strong> ${escapeHtml(p.requester_name)} (${escapeHtml(p.requester_email)})</div>
+        <div>📦 <strong>Módulo:</strong> ${escapeHtml(p.module_name)} | <strong>Tipo:</strong> ${p.type.toUpperCase()} | <strong>Prioridad:</strong> ${p.priority.toUpperCase()}</div>
+        <div>📝 <strong>Título:</strong> ${escapeHtml(p.title)}</div>
+        <div style="margin-top: 4px; color: var(--text-secondary); font-size: 0.8rem;">📄 <strong>Detalle:</strong> ${escapeHtml(p.description.substring(0, 150))}...</div>
+      `;
+    });
+
+    btnSubmitPastedTicket.addEventListener("click", async () => {
+      const raw = pasteTicketTextarea.value.trim();
+      if (!raw) {
+        alert("Por favor pega el texto del ticket primero.");
+        return;
+      }
+
+      const p = parseTicketText(raw);
+      btnSubmitPastedTicket.disabled = true;
+      btnSubmitPastedTicket.textContent = "Registrando...";
+
+      try {
+        const fd = new FormData();
+        fd.append("requester_name", p.requester_name);
+        fd.append("requester_email", p.requester_email);
+        fd.append("requester_phone", p.requester_phone);
+        fd.append("module_name", p.module_name);
+        fd.append("type", p.type);
+        fd.append("priority", p.priority);
+        fd.append("title", p.title || "Requerimiento de Soporte");
+        fd.append("description", (p.wait_code ? `[Importado desde ${p.wait_code}]\n\n` : "") + p.description);
+
+        const resp = await fetch(API_BASE + "/api/tickets", {
+          method: "POST",
+          body: fd,
+          credentials: "include"
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          alert(`¡Ticket registrado exitosamente con código ${data.ticket.code}!`);
+          closePasteModal();
+          loadTickets(false);
+          loadKPIs();
+        } else {
+          alert("Error: " + (data.error || "No se pudo registrar"));
+        }
+      } catch (err) {
+        alert("Error de conexión al guardar el ticket en el servidor central.");
+      } finally {
+        btnSubmitPastedTicket.disabled = false;
+        btnSubmitPastedTicket.textContent = "⚡ Registrar en Base de Datos";
+      }
+    });
+  }
+

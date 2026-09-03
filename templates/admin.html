@@ -72,6 +72,9 @@
       <button type="button" id="btnSyncQueue" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem; border-color: var(--color-accent); color: var(--color-accent);" title="Sincronizar solicitudes acumuladas en la Bandeja de Espera de GitHub">
         <span>🔄 Sincronizar Cola (<span id="queueBadgeCount">0</span>)</span>
       </button>
+      <button type="button" id="btnOpenPasteTicketModal" class="btn-primary" style="padding: 6px 12px; font-size: 0.84rem; background: #2E7D32; border-color: #2E7D32;" title="Importar ticket desde texto copiado en Teams o Correo">
+        <span>📥 Pegar de Teams</span>
+      </button>
       <a href="/" class="aq-nav-link">
         <span>📝 Portal Usuario</span>
       </a>
@@ -890,6 +893,40 @@
 
       <div class="aq-modal-footer">
         <button type="button" class="btn-secondary" id="btnCloseAnalyticsFooter">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORTAR TICKET COPIADO DE TEAMS / CORREO -->
+  <div id="modalPasteTicket" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 620px;">
+      <div class="aq-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">📥</span>
+          <h3 class="aq-card-title" style="font-size: 1.1rem; margin: 0;">Importar Ticket de Teams / Correo</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnClosePasteModal">&times;</button>
+      </div>
+      <div class="aq-modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+          Pega aquí el texto que te compartió tu colega por Teams o Correo para ingresarlo directamente a la base de datos oficial:
+        </p>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <textarea id="pasteTicketTextarea" class="form-control" rows="8" placeholder="Pega aquí el texto... Ejemplo:
+🔔 *Nuevo Requerimiento AquaShield* (TKT-WAIT-1330-456)
+👤 *Solicitante:* Eugenia Martínez (eugenia.martinez@aquachile.com)
+📦 *Módulo:* Módulo Congelado | *Tipo:* PROBLEMA
+📝 *Título:* Error en exportación de reportes
+📄 *Detalle:* El módulo no genera el excel..."></textarea>
+        </div>
+        <div id="pasteTicketPreview" style="display: none; background: var(--bg-card-secondary); border: 1.5px dashed var(--color-accent); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px; font-size: 0.85rem;">
+          <strong style="color: var(--color-accent);">Vista previa detectada:</strong>
+          <div id="pastePreviewDetails" style="margin-top: 6px; line-height: 1.5;"></div>
+        </div>
+      </div>
+      <div class="aq-modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelPasteTicket">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnSubmitPastedTicket" style="background: #2E7D32; border-color: #2E7D32;">⚡ Registrar en Base de Datos</button>
       </div>
     </div>
   </div>

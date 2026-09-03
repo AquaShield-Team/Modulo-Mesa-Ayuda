@@ -485,6 +485,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── Banner Inteligente de Red y Conexión ────────────────────────────────
+  const networkStatusBanner = document.getElementById("networkStatusBanner");
+  function renderNetworkStatusBanner() {
+    if (!networkStatusBanner) return;
+    const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '5050');
+    
+    if (isLocal) {
+      networkStatusBanner.innerHTML = `
+        <div style="background: rgba(46,125,50,0.08); border: 1.5px solid #2E7D32; border-radius: var(--radius-md); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">🟢</span>
+            <span style="font-size: 0.86rem; color: #2E7D32; font-weight: 700;">Conectado en Tiempo Real al Servidor Central (PM-COME-N255 · SQLite Activo)</span>
+          </div>
+          <span style="font-size: 0.76rem; color: #2E7D32; background: rgba(46,125,50,0.12); padding: 3px 10px; border-radius: 12px; font-weight: 600;">Sincronización Instantánea</span>
+        </div>
+      `;
+    } else {
+      networkStatusBanner.innerHTML = `
+        <div style="background: linear-gradient(135deg, rgba(230,81,0,0.07), rgba(255,152,0,0.12)); border: 1.5px solid var(--color-accent); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🏢</span>
+            <div>
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.92rem;">
+                ¿Estás en la Red AquaChile o conectado a la VPN?
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                Para que tu requerimiento entre de inmediato al servidor de Marcelo Ramírez con timbre en vivo:
+              </div>
+            </div>
+          </div>
+          <a href="http://PM-COME-N255:5050" class="btn-primary" style="padding: 8px 16px; font-size: 0.84rem; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;" title="Acceder directamente al servidor interno de Comercio Exterior">
+            <span>⚡ Servidor Directo AquaChile</span>
+          </a>
+        </div>
+      `;
+    }
+  }
+  renderNetworkStatusBanner();
+
   // ── 4. Cargar "Mis Solicitudes" (Resiliente 100% Offline-First) ───────────
   let cachedAllTickets = [];
 
@@ -1019,29 +1058,47 @@ document.addEventListener("DOMContentLoaded", () => {
           loadMyTickets();
         }
 
-        const successTitle = modalSuccessTicket.querySelector("h3") || modalSuccessTicket.querySelector("h2");
+        const successTitle = document.getElementById("successModalTitle");
+        const successDesc = document.getElementById("successModalDesc");
+        const successIcon = document.getElementById("successModalIcon");
+        const successCode = document.getElementById("successTicketCode");
+        const successActions = document.getElementById("successOfflineActions");
+
+        if (successIcon) successIcon.textContent = "✅";
         if (successTitle) successTitle.textContent = "¡Solicitud Creada con Éxito!";
-        successTicketCode.textContent = data.ticket.code;
+        if (successDesc) successDesc.textContent = "Tu requerimiento ha sido registrado en la base de datos central de AquaShield y notificado al equipo.";
+        if (successCode) successCode.textContent = data.ticket.code;
+        if (successActions) successActions.style.display = "none";
+
         modalSuccessTicket.classList.add("active");
       } else {
         alert("Error al enviar la solicitud: " + (data.error || "Ocurrió un error inesperado"));
       }
     } catch (err) {
-      console.warn("Servidor de soporte fuera de línea. Guardando en Bandeja de Espera 24/7...", err);
-      
-      // Fallback a Bandeja de Espera 24/7
+      console.warn("Servidor central en reposo o fuera de red. Activando despacho multicanal...", err);
+
       const now = new Date();
       const waitCode = "TKT-WAIT-" + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + "-" + String(Math.floor(100 + Math.random() * 900));
+      
+      const moduleSelect = document.getElementById("module_select");
+      const reqName = formData.get("requester_name") || (currentUser ? currentUser.name : "Colaborador COMEX");
+      const reqEmail = formData.get("requester_email") || (currentUser ? currentUser.email : "");
+      const reqPhone = formData.get("requester_phone") || "";
+      const reqModule = moduleSelect && moduleSelect.options[moduleSelect.selectedIndex] ? moduleSelect.options[moduleSelect.selectedIndex].text : (formData.get("module_name") || "AquaShield");
+      const reqType = formData.get("type") || "problema";
+      const reqPriority = formData.get("priority") || "media";
+      const reqTitle = formData.get("title") || "Requerimiento de Soporte";
+
       const offlineTicket = {
         code: waitCode,
         id: "offline_" + Date.now(),
-        requester_name: formData.get("requester_name") || (currentUser ? currentUser.name : "Usuario"),
-        requester_email: formData.get("requester_email") || (currentUser ? currentUser.email : ""),
-        requester_phone: formData.get("requester_phone") || "",
-        module_name: formData.get("module_name") || "AQUASHIELD HUB",
-        type: formData.get("type") || "problema",
-        priority: formData.get("priority") || "media",
-        title: formData.get("title") || "Requerimiento en espera",
+        requester_name: reqName,
+        requester_email: reqEmail,
+        requester_phone: reqPhone,
+        module_name: reqModule,
+        type: reqType,
+        priority: reqPriority,
+        title: reqTitle,
         description: fullDescription,
         status: "en_espera",
         created_at: now.toLocaleString("es-CL"),
@@ -1062,17 +1119,69 @@ document.addEventListener("DOMContentLoaded", () => {
         loadMyTickets();
       }
 
-      const successTitle = modalSuccessTicket.querySelector("h3") || modalSuccessTicket.querySelector("h2");
-      if (successTitle) successTitle.textContent = "⏳ Solicitud en Bandeja de Espera";
-      successTicketCode.textContent = waitCode;
-      
-      const successMsg = modalSuccessTicket.querySelector("p");
-      if (successMsg) {
-        successMsg.innerHTML = `¡Tu requerimiento fue recibido con éxito en nuestra cola de atención 24/7!<br><br>
-        <span style="font-size: 0.88rem; color: var(--text-secondary);">
-        El servidor central se encuentra en reposo. Tu solicitud ha quedado resguardada de forma segura y será procesada con código definitivo en cuanto el equipo de soporte inicie operaciones.
-        </span>`;
+      // Configurar Despacho Multicanal (Outlook + Teams)
+      const successTitle = document.getElementById("successModalTitle");
+      const successDesc = document.getElementById("successModalDesc");
+      const successIcon = document.getElementById("successModalIcon");
+      const successCode = document.getElementById("successTicketCode");
+      const successActions = document.getElementById("successOfflineActions");
+
+      if (successIcon) successIcon.textContent = "⏳";
+      if (successTitle) successTitle.textContent = "Solicitud Respaldada en Bandeja 24/7";
+      if (successDesc) successDesc.innerHTML = `Tu requerimiento quedó seguro en tu equipo con código temporal. <strong>Para que Marcelo Ramírez lo reciba de inmediato:</strong>`;
+      if (successCode) successCode.textContent = waitCode;
+
+      // Construir mailto estructurado para Outlook
+      const mailSubj = encodeURIComponent(`[MESA DE AYUDA AQUASHIELD] ${waitCode}: ${reqTitle} (${reqModule})`);
+      const mailBody = encodeURIComponent(
+`Hola Marcelo,
+
+He registrado el siguiente requerimiento en la Mesa de Ayuda AquaShield:
+
+══════════════════════════════════════════════════════
+📌 CÓDIGO TEMPORAL: ${waitCode}
+👤 SOLICITANTE:     ${reqName} (${reqEmail})
+📞 CONTACTO:        ${reqPhone || 'No especificado'}
+📦 MÓDULO AFECTADO: ${reqModule}
+⚡ TIPO:             ${reqType.toUpperCase()}
+🎯 PRIORIDAD:        ${reqPriority.toUpperCase()}
+📝 TÍTULO:           ${reqTitle}
+══════════════════════════════════════════════════════
+
+DESCRIPCIÓN DEL CASO:
+${fullDescription}
+
+══════════════════════════════════════════════════════
+(Enviado desde el Portal Web AquaShield)`
+      );
+
+      const btnMail = document.getElementById("btnSuccessMailto");
+      if (btnMail) {
+        btnMail.href = `mailto:marcelo.ramirez@aquachile.com?cc=${encodeURIComponent(reqEmail)}&subject=${mailSubj}&body=${mailBody}`;
       }
+
+      // Formato para Teams
+      const teamsText = `🔔 *Nuevo Requerimiento AquaShield* (${waitCode})\n` +
+        `👤 *Solicitante:* ${reqName} (${reqEmail})\n` +
+        `📦 *Módulo:* ${reqModule} | *Tipo:* ${reqType.toUpperCase()}\n` +
+        `📝 *Título:* ${reqTitle}\n` +
+        `📄 *Detalle:* ${fullDescription.substring(0, 300)}...`;
+
+      const btnTeams = document.getElementById("btnSuccessTeams");
+      if (btnTeams) {
+        btnTeams.onclick = () => {
+          navigator.clipboard.writeText(teamsText).then(() => {
+            btnTeams.innerHTML = "<span>✅ ¡Copiado! Pégalo en Teams con Ctrl+V</span>";
+            setTimeout(() => {
+              btnTeams.innerHTML = "<span>📋 Copiar Resumen para Microsoft Teams</span>";
+            }, 3500);
+          }).catch(() => {
+            alert("No se pudo copiar automáticamente. Por favor abre el correo de Outlook.");
+          });
+        };
+      }
+
+      if (successActions) successActions.style.display = "flex";
       modalSuccessTicket.classList.add("active");
     } finally {
       btnSubmitTicket.disabled = false;

@@ -111,6 +111,9 @@
           </span>
         </div>
 
+        <!-- Banner Inteligente de Enrutamiento de Red -->
+        <div id="networkStatusBanner" style="margin-bottom: 16px;"></div>
+
         <!-- Banner de Sesión Activa -->
         <div id="authAutofillBanner" class="user-status-banner" style="display: none;">
           <div>
@@ -605,24 +608,34 @@
   <!-- MODAL: CONFIRMACIÓN EXITOSA DE TICKET -->
   <div id="modalSuccessTicket" class="aq-modal-overlay">
     <div class="aq-modal" style="max-width: 550px; text-align: center;">
-      <div class="aq-modal-body" style="padding: 36px 24px;">
-        <div style="font-size: 3.5rem; margin-bottom: 12px;">✅</div>
-        <h3 class="aq-hero-title" style="font-size: 1.5rem; margin-bottom: 8px;">¡Solicitud Ingresada con Éxito!</h3>
-        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+      <div class="aq-modal-body" style="padding: 32px 24px;">
+        <div id="successModalIcon" style="font-size: 3.2rem; margin-bottom: 8px;">✅</div>
+        <h3 class="aq-hero-title" id="successModalTitle" style="font-size: 1.4rem; margin-bottom: 6px;">¡Solicitud Ingresada con Éxito!</h3>
+        <p id="successModalDesc" style="color: var(--text-secondary); margin-bottom: 18px; font-size: 0.9rem;">
           Tu requerimiento ha sido registrado en la Mesa de Ayuda de AquaShield.
         </p>
         
-        <div style="background-color: var(--color-accent-soft); border: 1px dashed var(--color-accent); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Código de Seguimiento</div>
-          <div id="successTicketCode" style="font-family: 'Quicksand', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text-primary);">TKT-2026-0001</div>
+        <div style="background-color: var(--color-accent-soft); border: 1.5px dashed var(--color-accent); border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px;">
+          <div id="successTicketLabel" style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Código de Seguimiento</div>
+          <div id="successTicketCode" style="font-family: 'Quicksand', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 4px 0;">TKT-2026-0001</div>
+          <div id="successTicketSubnote" style="font-size: 0.8rem; color: var(--text-secondary);">Puedes revisar su estado en la pestaña "Mis Solicitudes"</div>
         </div>
 
-        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px;">
-          Puedes ver el avance de todas tus solicitudes en la pestaña <strong>"Mis Solicitudes"</strong>.
-        </p>
+        <!-- Acciones Multicanal Inmediatas (Visibles en modo contingencia/GitHub Pages) -->
+        <div id="successOfflineActions" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <a id="btnSuccessMailto" href="#" class="btn-primary" style="padding: 10px 16px; text-decoration: none; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>✉️ Notificar a Marcelo Ramírez por Correo (Outlook)</span>
+          </a>
+          <button type="button" id="btnSuccessTeams" class="btn-secondary" style="padding: 9px 16px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>📋 Copiar Resumen para Microsoft Teams</span>
+          </button>
+          <a id="btnSuccessDirectServer" href="http://PM-COME-N255:5050" class="btn-secondary" style="padding: 8px 14px; font-size: 0.82rem; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-secondary);">
+            <span>⚡ Abrir en Servidor Directo de Red (PM-COME-N255:5050)</span>
+          </a>
+        </div>
 
         <div style="display: flex; justify-content: center; gap: 12px;">
-          <button type="button" class="btn-primary" id="btnSuccessOk">Entendido</button>
+          <button type="button" class="btn-primary" id="btnSuccessOk" style="min-width: 140px;">Listo / Entendido</button>
         </div>
       </div>
     </div>
