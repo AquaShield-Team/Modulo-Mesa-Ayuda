@@ -485,45 +485,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── Detector Inteligente de Red AquaChile / VPN con Discriminación No Destructiva ──
+  // ── Redirección Automática al Servidor Central AquaChile (PM-COME-N255) ──
   const networkStatusBanner = document.getElementById("networkStatusBanner");
-
-  function probeIntranetServer(timeoutMs = 1200) {
-    return new Promise((resolve) => {
-      let resolved = false;
-      const finish = (result) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timerId);
-          resolve(result);
-        }
-      };
-
-      const timerId = setTimeout(() => finish(false), timeoutMs);
-
-      // Prueba 1: Petición no-cors al endpoint de salud /api/health
-      try {
-        const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), timeoutMs);
-        fetch("http://PM-COME-N255:5050/api/health", {
-          mode: "no-cors",
-          cache: "no-store",
-          signal: ctrl.signal
-        }).then(() => finish(true)).catch(() => {});
-      } catch (e) {}
-
-      // Prueba 2: Carga de recurso favicon
-      try {
-        const img = new Image();
-        img.onload = () => finish(true);
-        img.src = "http://PM-COME-N255:5050/static/favicon.ico?_ping=" + Date.now();
-      } catch (e) {}
-    });
-  }
 
   function renderNetworkStatusBanner() {
     if (!networkStatusBanner) return;
-    const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '5050' || window.location.hostname.includes('PM-COME-N255'));
+    const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '5050' || window.location.hostname.includes('PM-COME-N255') || window.location.hostname === '172.18.136.195');
     
     if (isLocal) {
       networkStatusBanner.innerHTML = `
@@ -542,100 +509,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (stayOnGh) {
       networkStatusBanner.innerHTML = `
-        <div style="background: rgba(230,81,0,0.06); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+        <div style="background: rgba(230,81,0,0.06); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-primary);">
             <span>🌐</span>
-            <span>Modo Contingencia Web Activo. Despacho directo disponible por Teams y Correo.</span>
+            <span><strong>Modo Fuera de Red / Sin VPN:</strong> Solicitudes se respaldan en tu equipo y se despachan por Teams o Correo.</span>
           </div>
-          <a href="http://PM-COME-N255:5050" class="btn-secondary" style="padding: 3px 10px; font-size: 0.76rem; text-decoration: none;">⚡ Conectar a Servidor Central</a>
+          <a href="http://PM-COME-N255:5050" class="btn-secondary" style="padding: 4px 12px; font-size: 0.78rem; text-decoration: none;">⚡ ¿Conectaste VPN? Ir a Servidor Central</a>
         </div>
       `;
       return;
     }
 
-    // Mostrar estado inicial de detección
+    // Auto-redirección limpia a la Mesa Central con cuenta regresiva visible de 1 segundo
+    let countdown = 1;
     networkStatusBanner.innerHTML = `
-      <div style="background: linear-gradient(135deg, rgba(230,81,0,0.07), rgba(255,152,0,0.12)); border: 1.5px solid var(--color-accent); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="background: rgba(46,125,50,0.12); border: 2px solid #2E7D32; border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.5rem;">🏢</span>
+          <span style="font-size: 1.6rem;">🟢</span>
           <div>
-            <div style="font-weight: 700; color: var(--text-primary); font-size: 0.92rem;">
-              ¿Estás en la Red AquaChile o conectado a la VPN?
+            <div style="font-weight: 700; color: #2E7D32; font-size: 0.95rem;">
+              Conectando con la Mesa de Ayuda Central AquaChile...
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-              Detectando conexión corporativa con el Servidor Central...
+            <div style="font-size: 0.83rem; color: var(--text-primary); margin-top: 2px;">
+              Redirigiendo a <strong>http://PM-COME-N255:5050</strong> en <strong id="autoRedirectTimer" style="color: #2E7D32; font-size: 1rem;">${countdown}</strong> segundo...
             </div>
           </div>
         </div>
-        <a href="http://PM-COME-N255:5050" class="btn-primary" style="padding: 8px 16px; font-size: 0.84rem; text-decoration: none; white-space: nowrap;">
-          <span>⚡ Conectar al Servidor Central</span>
-        </a>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="http://PM-COME-N255:5050" class="btn-primary" style="background: #2E7D32; border-color: #2E7D32; padding: 7px 16px; font-size: 0.84rem; text-decoration: none;">
+            ⚡ Entrar Ahora
+          </a>
+          <button type="button" id="btnCancelAutoRedirect" class="btn-secondary" style="padding: 7px 12px; font-size: 0.82rem;">
+            Estoy sin VPN (Quedarme aquí)
+          </button>
+        </div>
       </div>
     `;
 
-    // Ejecutar comprobación discriminatoria (1.2s timeout)
-    probeIntranetServer(1200).then((isReachable) => {
-      if (!isReachable) {
-        // Fuera de red / Sin VPN: Permanecer en GitHub Pages silenciosamente sin error
-        networkStatusBanner.innerHTML = `
-          <div style="background: rgba(230,81,0,0.06); border: 1.5px solid var(--color-accent); border-radius: var(--radius-md); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">🏢</span>
-              <span style="font-size: 0.84rem; color: var(--text-primary);">
-                <strong>Modo Fuera de Red (Sin VPN)</strong> · Tus requerimientos se respaldan en tu equipo y se despachan por Teams o Correo.
-              </span>
-            </div>
-            <a href="http://PM-COME-N255:5050" class="btn-secondary" style="padding: 4px 12px; font-size: 0.78rem; text-decoration: none;" title="Si activaste tu VPN, haz clic aquí para entrar">⚡ ¿Activaste VPN? Conectar</a>
-          </div>
-        `;
-      } else {
-        // En Red / VPN activa: Notificar y auto-redirigir con cuenta regresiva
-        let countdown = 2;
-        networkStatusBanner.innerHTML = `
-          <div style="background: rgba(46,125,50,0.12); border: 2px solid #2E7D32; border-radius: var(--radius-md); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.6rem;">🟢</span>
-              <div>
-                <div style="font-weight: 700; color: #2E7D32; font-size: 0.94rem;">
-                  ¡Red AquaChile / VPN Detectada con Éxito!
-                </div>
-                <div style="font-size: 0.82rem; color: var(--text-primary); margin-top: 2px;">
-                  Conectando a la <strong>Mesa de Ayuda Oficial en Vivo</strong> en <strong id="autoRedirectTimer" style="color: #2E7D32; font-size: 0.95rem;">${countdown}</strong> segundos...
-                </div>
-              </div>
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <a href="http://PM-COME-N255:5050" class="btn-primary" style="background: #2E7D32; border-color: #2E7D32; padding: 7px 16px; font-size: 0.84rem; text-decoration: none;">
-                ⚡ Entrar Ahora
-              </a>
-              <button type="button" id="btnCancelAutoRedirect" class="btn-secondary" style="padding: 7px 12px; font-size: 0.82rem;">
-                Permanecer Aquí
-              </button>
-            </div>
-          </div>
-        `;
+    const timerSpan = document.getElementById("autoRedirectTimer");
+    const cancelBtn = document.getElementById("btnCancelAutoRedirect");
 
-        const timerSpan = document.getElementById("autoRedirectTimer");
-        const cancelBtn = document.getElementById("btnCancelAutoRedirect");
-
-        const countdownTimer = setInterval(() => {
-          countdown--;
-          if (timerSpan) timerSpan.textContent = countdown;
-          if (countdown <= 0) {
-            clearInterval(countdownTimer);
-            window.location.replace("http://PM-COME-N255:5050");
-          }
-        }, 1000);
-
-        if (cancelBtn) {
-          cancelBtn.addEventListener("click", () => {
-            clearInterval(countdownTimer);
-            sessionStorage.setItem("aquashield_stay_gh", "true");
-            renderNetworkStatusBanner();
-          });
-        }
+    const countdownTimer = setInterval(() => {
+      countdown--;
+      if (timerSpan) timerSpan.textContent = countdown;
+      if (countdown <= 0) {
+        clearInterval(countdownTimer);
+        window.location.replace("http://PM-COME-N255:5050");
       }
-    });
+    }, 1000);
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        clearInterval(countdownTimer);
+        sessionStorage.setItem("aquashield_stay_gh", "true");
+        renderNetworkStatusBanner();
+      });
+    }
   }
   renderNetworkStatusBanner();
 
