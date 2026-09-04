@@ -141,12 +141,18 @@ def print_dashboard():
         print(f"  {BOLD}● BASE DE DATOS LOCAL (SQLITE):{RESET}         {YELLOW}[ NO INICIALIZADA ]{RESET}")
 
     print(f"\n{CYAN}==============================================================================={RESET}")
-    print(f"                             {BOLD}ACCIONES RÁPIDAS{RESET}")
+    print(f"                             {BOLD}ACCIONES DISPONIBLES{RESET}")
     print(f"{CYAN}==============================================================================={RESET}\n")
-    print(f"  ¿Necesitas {BOLD}INICIAR{RESET} el servidor en segundo plano?  -->  Presiona {CYAN}[1]{RESET}")
-    print(f"  ¿Necesitas {BOLD}DETENER{RESET} el servidor en segundo plano?  -->  Presiona {RED}[2]{RESET}")
-    print(f"  ¿Necesitas {BOLD}REINICIAR{RESET} el servidor (refrescar)?     -->  Presiona {YELLOW}[3]{RESET}")
-    print(f"  ¿Necesitas {BOLD}ABRIR{RESET} tu Panel Admin en Chrome?        -->  Presiona {GREEN}[4]{RESET}")
+
+    if srv["active"]:
+        # Si el servidor ya está activo, NO mostrar opción de iniciar
+        print(f"  ¿Necesitas {BOLD}DETENER{RESET} el servidor en segundo plano?  -->  Presiona {RED}[2]{RESET}")
+        print(f"  ¿Necesitas {BOLD}REINICIAR{RESET} el servidor (refrescar)?     -->  Presiona {YELLOW}[3]{RESET}")
+        print(f"  ¿Necesitas {BOLD}ABRIR{RESET} tu Panel Admin en Chrome?        -->  Presiona {GREEN}[4]{RESET}")
+    else:
+        # Si el servidor está detenido, mostrar opción de iniciar y ocultar detener/reiniciar/admin
+        print(f"  ¿Necesitas {BOLD}INICIAR{RESET} el servidor en segundo plano?  -->  Presiona {CYAN}[1]{RESET}")
+
     print(f"  ¿Necesitas {BOLD}ABRIR{RESET} el Portal Web de tus Colegas?    -->  Presiona {GREEN}[5]{RESET}")
     print(f"  ¿Necesitas {BOLD}REFRESCAR{RESET} este panel de estado?        -->  Presiona [R]")
     print(f"  ¿Deseas {BOLD}SALIR{RESET} del Centro de Control?              -->  Presiona [0]")
