@@ -32,25 +32,24 @@ Sistema centralizado de Mesa de Ayuda y Recepción de Requerimientos para la pla
 
 ---
 
-## 🚀 Modos de Ejecución
+## 🚀 Centro de Control y Lanzador Único (`AQUASHIELD.bat`)
 
-El proyecto incluye scripts preparados para cada necesidad:
+Todo el control operativo del sistema está consolidado en un único archivo ejecutable:
 
-1. **Modo Silencioso (Segundo Plano - Sin ventana CMD)**:
-   - Haz doble clic en `INICIAR_SILENCIOSO.bat` (o `INICIAR_SEGUNDO_PLANO.vbs`).
-   - El servidor correrá de forma totalmente invisible y abrirá tu navegador.
-   - Para detenerlo cuando quieras: haz doble clic en `DETENER_SERVICIO.bat`.
-   - Para ver si está corriendo: haz doble clic en `ESTADO_SERVICIO.bat`.
+📁 **`AQUASHIELD.bat`** *(ubicado en la raíz de este proyecto)*
 
-2. **Inicio Automático con Windows**:
-   - Haz doble clic en `CONFIGURAR_INICIO_AUTOMATICO.bat`.
-   - La Mesa de Ayuda se iniciará sola en segundo plano cada vez que prendas el computador.
-   - Para desactivar el inicio automático: ejecuta `QUITAR_INICIO_AUTOMATICO.bat`.
-
-3. **Modo Consola (Visible con logs)**:
-   - Haz doble clic en `INICIAR_MESA_AYUDA.bat` si deseas ver la consola de Python en vivo.
+### ¿Qué hace automáticamente al abrirlo?
+1. **Inicia el servidor en segundo plano**: Si el servidor no está corriendo, lo levanta en silencio vía `pythonw.exe app.py` en el puerto `5050`.
+2. **Abre Google Chrome**: Carga de inmediato el **Panel de Administración** en `http://localhost:5050/admin`.
+3. **Monitor en Tiempo Real (Watchdog cada 3s)**: Monitorea el estado del servidor, red corporativa, canal de colegas y base de datos, con opciones rápidas de control por teclado (`1` Reiniciar, `2` Detener, `3` Reabrir Chrome, `0` Salir).
 
 ---
+
+## 🌐 Enlaces del Ecosistema
+
+* **Portal Web para Colegas (Usuarios)**: [https://aquashield-team.github.io/Modulo-Mesa-Ayuda/](https://aquashield-team.github.io/Modulo-Mesa-Ayuda/)
+* **Panel de Gestión Local**: [http://localhost:5050/admin](http://localhost:5050/admin)
+* **Documentación y Arquitectura Completa**: Ver archivo [CONTEXTO_PROYECTO.md](CONTEXTO_PROYECTO.md)
 
 ## 📁 Estructura del Proyecto
 
@@ -59,17 +58,10 @@ Modulo-Mesa-Ayuda/
 ├── app.py                             # Servidor Flask / API REST
 ├── database.py                        # Capa SQLite con persistencia y lógica de usuarios/tickets
 ├── requirements.txt                   # Dependencias de Python
-├── INICIAR_SILENCIOSO.bat             # Inicia el servidor en segundo plano (sin CMD)
-├── INICIAR_SEGUNDO_PLANO.vbs          # Script VBScript para ejecución oculta
-├── DETENER_SERVICIO.bat               # Detiene el servidor en segundo plano
-├── ESTADO_SERVICIO.bat                # Muestra el estado y PID del servidor
-├── CONFIGURAR_INICIO_AUTOMATICO.bat   # Inicia la Mesa de Ayuda al encender Windows
-├── QUITAR_INICIO_AUTOMATICO.bat       # Remueve el inicio automático
-├── INICIAR_MESA_AYUDA.bat             # Lanzador clásico con consola visible
+├── AQUASHIELD.bat                     # Lanzador centralizado del sistema
 ├── INSTALAR.bat                       # Instalador de librerías
 ├── static/                            # CSS, JS corporativo y logos oficiales
 ├── templates/                         # Vistas HTML (Portal y Admin)
 ├── data/                              # Base de datos SQLite
 └── uploads/                           # Almacenamiento organizado por ticket
 ```
-
