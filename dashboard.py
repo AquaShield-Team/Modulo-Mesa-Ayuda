@@ -1,8 +1,11 @@
 import os
 import sys
+import time
 import subprocess
 import sqlite3
 import socket
+import msvcrt
+from datetime import datetime
 
 # Configurar salida UTF-8 para consola de Windows
 if sys.stdout.encoding != 'utf-8':
@@ -93,15 +96,30 @@ def get_db_info():
     except Exception:
         return {"exists": False}
 
-def print_dashboard():
-    os.system("")
+def start_server_background():
+    subprocess.Popen(['pythonw', 'app.py'], cwd=BASE_DIR)
+    time.sleep(1.5)
+
+def stop_server():
+    srv = get_server_status()
+    if srv["active"]:
+        for pid in srv["pids"]:
+            subprocess.run(f'taskkill /F /PID {pid}', shell=True, capture_output=True)
+        time.sleep(1)
+
+def open_admin_chrome():
+    subprocess.run('start chrome "http://localhost:5050/admin" 2>nul || start msedge "http://localhost:5050/admin" 2>nul || start "" "http://localhost:5050/admin"', shell=True)
+
+def render_screen(message=None):
+    os.system("cls")
     srv = get_server_status()
     hostname, ip = get_network_info()
     db = get_db_info()
+    now_str = datetime.now().strftime("%H:%M:%S")
 
     print(f"{CYAN}==============================================================================={RESET}")
     print(f"                {BOLD}AQUASHIELD · MESA DE AYUDA (AquaChile S.A.){RESET}")
-    print(f"                     {GRAY}CENTRO DE CONTROL Y MONITOR EN VIVO{RESET}")
+    print(f"                 {GRAY}CENTRO DE CONTROL Y MONITOR EN TIEMPO REAL{RESET}")
     print(f"{CYAN}==============================================================================={RESET}\n")
 
     # 1. SERVIDOR DESATENDIDO
@@ -116,19 +134,19 @@ def print_dashboard():
             print(f"  {BOLD}● SERVIDOR EN MODO CONSOLA VISIBLE:{RESET}     {YELLOW}[ ACTIVO 🖥️ ]{RESET}")
             print(f"    {GRAY}└─ Proceso: {pid_desc} | Puerto: 5050{RESET}")
     else:
-        print(f"  {BOLD}● SERVIDOR DESATENDIDO (SEGUNDO PLANO):{RESET} {RED}[ DETENIDO 🔴 ]{RESET}")
-        print(f"    {GRAY}└─ No hay ningún servidor ejecutándose en el puerto 5050.{RESET}")
+        print(f"  {BOLD}● SERVIDOR DESATENDIDO (SEGUNDO PLANO):{RESET} {RED}[ DETENIDO / CAÍDO 🔴 ]{RESET}")
+        print(f"    {GRAY}└─ El servidor no está respondiendo en el puerto 5050.{RESET}")
 
     print()
 
     # 2. RED LOCAL CORPORATIVA
-    print(f"  {BOLD}● RED LOCAL CORPORATIVA ({hostname}):{RESET}   {GREEN}[ ACTIVO 🟢 ]{RESET}")
+    print(f"  {BOLD}● RED LOCAL CORPORATIVA ({hostname}):{RESET}   {GREEN}[ CONECTADO 🟢 ]{RESET}")
     print(f"    {GRAY}└─ Equipo: {hostname} | IP: {ip} | Red: olimpo.aquachile.com{RESET}")
 
     print()
 
-    # 3. CANAL COLEGAS (OFICINA / VPN)
-    print(f"  {BOLD}● CANAL PARA COLEGAS (OFICINA / VPN):{RESET}   {GREEN}[ ACTIVO 🟢 ]{RESET}")
+    # 3. CANAL COLEGAS (PORTAL CLOUD)
+    print(f"  {BOLD}● CANAL PARA COLEGAS (OFICINA / VPN):{RESET}   {GREEN}[ OPERATIVO 🟢 ]{RESET}")
     print(f"    {GRAY}└─ Portal Cloud: https://aquashield-team.github.io/Modulo-Mesa-Ayuda/{RESET}")
 
     print()
@@ -140,23 +158,79 @@ def print_dashboard():
     else:
         print(f"  {BOLD}● BASE DE DATOS LOCAL (SQLITE):{RESET}         {YELLOW}[ NO INICIALIZADA ]{RESET}")
 
+    print()
+    print(f"  {CYAN}⏱️  ESTADO EN VIVO:{RESET} Chequeo a las {BOLD}{now_str}{RESET} (Actualización automática cada 3s)")
+
+    if message:
+        print(f"\n  {YELLOW}>>> {message}{RESET}")
+
     print(f"\n{CYAN}==============================================================================={RESET}")
-    print(f"                             {BOLD}ACCIONES DISPONIBLES{RESET}")
+    print(f"                             {BOLD}CONTROL RÁPIDO{RESET}")
     print(f"{CYAN}==============================================================================={RESET}\n")
 
     if srv["active"]:
-        # Si el servidor ya está activo, NO mostrar opción de iniciar
-        print(f"  ¿Necesitas {BOLD}DETENER{RESET} el servidor en segundo plano?  -->  Presiona {RED}[2]{RESET}")
-        print(f"  ¿Necesitas {BOLD}REINICIAR{RESET} el servidor (refrescar)?     -->  Presiona {YELLOW}[3]{RESET}")
-        print(f"  ¿Necesitas {BOLD}ABRIR{RESET} tu Panel Admin en Chrome?        -->  Presiona {GREEN}[4]{RESET}")
+        print(f"  [1] {BOLD}Reiniciar Servidor{RESET} (Refrescar proceso en segundo plano)")
+        print(f"  [2] {BOLD}Detener Servidor{RESET}")
+        print(f"  [3] {BOLD}Volver a abrir Panel Admin en Chrome{RESET}")
     else:
-        # Si el servidor está detenido, mostrar opción de iniciar y ocultar detener/reiniciar/admin
-        print(f"  ¿Necesitas {BOLD}INICIAR{RESET} el servidor en segundo plano?  -->  Presiona {CYAN}[1]{RESET}")
+        print(f"  [1] {BOLD}Iniciar Servidor en segundo plano{RESET}")
 
-    print(f"  ¿Necesitas {BOLD}ABRIR{RESET} el Portal Web de tus Colegas?    -->  Presiona {GREEN}[5]{RESET}")
-    print(f"  ¿Necesitas {BOLD}REFRESCAR{RESET} este panel de estado?        -->  Presiona [R]")
-    print(f"  ¿Deseas {BOLD}SALIR{RESET} del Centro de Control?              -->  Presiona [0]")
+    print(f"  [0] {BOLD}Salir del Monitor{RESET} (El servidor continuará activo en segundo plano)")
     print(f"\n{CYAN}==============================================================================={RESET}")
+    print("Presiona una tecla para ejecutar una acción...")
+
+def main():
+    os.system("")
+    # 1. Al iniciar: si el servidor no está corriendo, levantarlo automáticamente en segundo plano
+    srv = get_server_status()
+    if not srv["active"]:
+        print("Iniciando servidor en segundo plano...")
+        start_server_background()
+
+    # 2. Abrir automáticamente Google Chrome en el panel de admin
+    print("Abriendo Panel Admin en Google Chrome...")
+    open_admin_chrome()
+
+    message = None
+    # 3. Bucle de monitoreo en tiempo real (Watchdog cada 3 segundos)
+    while True:
+        render_screen(message)
+        message = None
+
+        # Esperar 3 segundos verificando si el usuario presiona una tecla
+        key_pressed = None
+        for _ in range(15): # 15 * 0.2s = 3 segundos
+            time.sleep(0.2)
+            if msvcrt.kbhit():
+                ch = msvcrt.getch()
+                try:
+                    key_pressed = ch.decode("utf-8").lower()
+                except Exception:
+                    key_pressed = str(ch)
+                break
+
+        if key_pressed:
+            srv = get_server_status()
+            if key_pressed == "1":
+                if srv["active"]:
+                    message = "Reiniciando servidor desatendido..."
+                    stop_server()
+                    start_server_background()
+                    message = "Servidor reiniciado exitosamente en segundo plano."
+                else:
+                    message = "Iniciando servidor desatendido..."
+                    start_server_background()
+                    message = "Servidor iniciado en segundo plano."
+            elif key_pressed == "2" and srv["active"]:
+                message = "Deteniendo servidor..."
+                stop_server()
+                message = "Servidor detenido."
+            elif key_pressed == "3" and srv["active"]:
+                open_admin_chrome()
+                message = "Panel Admin abierto en Chrome."
+            elif key_pressed in ("0", "q"):
+                print("\nCerrando monitor. El servidor continúa activo en segundo plano.\n")
+                break
 
 if __name__ == "__main__":
-    print_dashboard()
+    main()
