@@ -2,15 +2,15 @@ import os
 import sys
 import subprocess
 import sqlite3
+import socket
 
-# Configurar salida UTF-8 para evitar errores de charmap en CMD de Windows
+# Configurar salida UTF-8 para consola de Windows
 if sys.stdout.encoding != 'utf-8':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
         pass
 
-# Colores ANSI
 CYAN = "\033[96m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
@@ -22,7 +22,14 @@ GRAY = "\033[90m"
 BASE_DIR = r"c:\dev\Modulo-Mesa-Ayuda"
 DB_PATH = os.path.join(BASE_DIR, "data", "helpdesk.db")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
-STARTUP_LINK = os.path.join(os.environ.get("APPDATA", ""), r"Microsoft\Windows\Start Menu\Programs\Startup\AquaShield_Mesa_Ayuda.lnk")
+
+def get_network_info():
+    hostname = socket.gethostname()
+    try:
+        ip = socket.gethostbyname(hostname)
+    except Exception:
+        ip = "172.18.136.195"
+    return hostname, ip
 
 def get_server_status():
     try:
@@ -61,7 +68,7 @@ def get_server_status():
     except Exception as e:
         return {"active": False, "error": str(e)}
 
-def get_database_metrics():
+def get_db_info():
     if not os.path.exists(DB_PATH):
         return {"exists": False}
     try:
@@ -69,80 +76,81 @@ def get_database_metrics():
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM tickets")
         total_tickets = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM tickets WHERE status = 'abierto'")
-        open_tickets = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM users")
         total_users = cur.fetchone()[0]
         conn.close()
 
         total_uploads = 0
-        total_size_mb = 0
         if os.path.exists(UPLOADS_DIR):
-            for f in os.listdir(UPLOADS_DIR):
-                fp = os.path.join(UPLOADS_DIR, f)
-                if os.path.isfile(fp):
-                    total_uploads += 1
-                    total_size_mb += os.path.getsize(fp) / (1024 * 1024)
+            total_uploads = len([f for f in os.listdir(UPLOADS_DIR) if os.path.isfile(os.path.join(UPLOADS_DIR, f))])
 
         return {
             "exists": True,
             "total_tickets": total_tickets,
-            "open_tickets": open_tickets,
             "total_users": total_users,
-            "total_uploads": total_uploads,
-            "uploads_size_mb": round(total_size_mb, 2)
+            "total_uploads": total_uploads
         }
-    except Exception as e:
-        return {"exists": False, "error": str(e)}
-
-def check_autostart():
-    return os.path.exists(STARTUP_LINK)
+    except Exception:
+        return {"exists": False}
 
 def print_dashboard():
     os.system("")
-
     srv = get_server_status()
-    db = get_database_metrics()
-    autostart = check_autostart()
+    hostname, ip = get_network_info()
+    db = get_db_info()
 
     print(f"{CYAN}==============================================================================={RESET}")
-    print(f"      {BOLD}AQUASHIELD · MESA DE AYUDA Y GESTIÓN DE REQUERIMIENTOS (AquaChile){RESET}")
-    print(f"                       {GRAY}PANEL DE ESTADO Y PROCESOS EN VIVO{RESET}")
+    print(f"                {BOLD}AQUASHIELD · MESA DE AYUDA (AquaChile S.A.){RESET}")
+    print(f"                     {GRAY}CENTRO DE CONTROL Y MONITOR EN VIVO{RESET}")
     print(f"{CYAN}==============================================================================={RESET}\n")
 
+    # 1. SERVIDOR DESATENDIDO
     if srv["active"]:
-        print(f"  {BOLD}ESTADO SERVIDOR:{RESET}    {GREEN}[ACTIVO]{RESET} Escuchando en http://localhost:5050")
         procs = srv.get("processes", [])
         has_silent = any(p.get("is_silent") for p in procs)
-        mode_text = f"{CYAN}[MODO SILENCIOSO / SEGUNDO PLANO]{RESET} (Sin ventana de consola)" if has_silent else f"{YELLOW}[MODO VISIBLE]{RESET} (Ejecutándose en consola)"
-        print(f"  {BOLD}MODO DE EJECUCIÓN:{RESET}  {mode_text}")
-
-        print(f"  {BOLD}PROCESOS EN VIVO:{RESET}")
-        for p in procs:
-            mode_tag = "(Segundo Plano)" if p.get("is_silent") else "(Consola Activa)"
-            print(f"    ├─ PID {BOLD}{p['pid']}{RESET} : {p['name']} {mode_tag} | Memoria RAM: {p['memory']}")
+        pid_desc = ", ".join([f"{p['name']} (PID {p['pid']}, RAM: {p['memory']})" for p in procs])
+        if has_silent:
+            print(f"  {BOLD}● SERVIDOR DESATENDIDO (SEGUNDO PLANO):{RESET} {GREEN}[ ACTIVO 🟢 ]{RESET}")
+            print(f"    {GRAY}└─ Proceso Silencioso: {pid_desc} | Puerto: 5050{RESET}")
+        else:
+            print(f"  {BOLD}● SERVIDOR EN MODO CONSOLA VISIBLE:{RESET}     {YELLOW}[ ACTIVO 🖥️ ]{RESET}")
+            print(f"    {GRAY}└─ Proceso: {pid_desc} | Puerto: 5050{RESET}")
     else:
-        print(f"  {BOLD}ESTADO SERVIDOR:{RESET}    {RED}[DETENIDO / INACTIVO]{RESET}")
-        print(f"  {BOLD}MODO DE EJECUCIÓN:{RESET}  {GRAY}Ningún proceso en ejecución{RESET}")
+        print(f"  {BOLD}● SERVIDOR DESATENDIDO (SEGUNDO PLANO):{RESET} {RED}[ DETENIDO 🔴 ]{RESET}")
+        print(f"    {GRAY}└─ No hay ningún servidor ejecutándose en el puerto 5050.{RESET}")
 
     print()
 
+    # 2. RED LOCAL CORPORATIVA
+    print(f"  {BOLD}● RED LOCAL CORPORATIVA ({hostname}):{RESET}   {GREEN}[ ACTIVO 🟢 ]{RESET}")
+    print(f"    {GRAY}└─ Equipo: {hostname} | IP: {ip} | Red: olimpo.aquachile.com{RESET}")
+
+    print()
+
+    # 3. CANAL COLEGAS (OFICINA / VPN)
+    print(f"  {BOLD}● CANAL PARA COLEGAS (OFICINA / VPN):{RESET}   {GREEN}[ ACTIVO 🟢 ]{RESET}")
+    print(f"    {GRAY}└─ Portal Cloud: https://aquashield-team.github.io/Modulo-Mesa-Ayuda/{RESET}")
+
+    print()
+
+    # 4. BASE DE DATOS
     if db.get("exists"):
-        print(f"  {BOLD}BASE DE DATOS:{RESET}      {GREEN}[OK]{RESET} SQLite Activa | {BOLD}{db['total_tickets']}{RESET} Tickets ({BOLD}{db['open_tickets']}{RESET} Abiertos) | {BOLD}{db['total_users']}{RESET} Usuarios")
-        print(f"  {BOLD}ARCHIVOS ADJUNTOS:{RESET}  {BOLD}{db['total_uploads']}{RESET} archivos subidos ({db['uploads_size_mb']} MB en disco)")
+        print(f"  {BOLD}● BASE DE DATOS LOCAL (SQLITE):{RESET}         {GREEN}[ CONECTADA 💾 ]{RESET}")
+        print(f"    {GRAY}└─ {db['total_tickets']} Tickets registrados | {db['total_users']} Usuarios | {db['total_uploads']} Archivos adjuntos{RESET}")
     else:
-        print(f"  {BOLD}BASE DE DATOS:{RESET}      {YELLOW}Base de datos no inicializada{RESET}")
+        print(f"  {BOLD}● BASE DE DATOS LOCAL (SQLITE):{RESET}         {YELLOW}[ NO INICIALIZADA ]{RESET}")
 
-    if autostart:
-        print(f"  {BOLD}AUTO-INICIO:{RESET}        {GREEN}[ACTIVADO]{RESET} Inicia en silencio al encender el computador")
-    else:
-        print(f"  {BOLD}AUTO-INICIO:{RESET}        {GRAY}[DESACTIVADO]{RESET} Requiere inicio manual")
-
-    print()
-    print(f"  {BOLD}ENLACES RÁPIDOS:{RESET}")
-    print(f"    - Panel Admin Gestión:   {CYAN}http://localhost:5050/admin{RESET}")
-    print(f"    - Portal Web Usuarios:   {CYAN}https://aquashield-team.github.io/Modulo-Mesa-Ayuda/{RESET}")
-    print(f"{CYAN}==============================================================================={RESET}")
+    print(f"\n{CYAN}==============================================================================={RESET}")
+    print(f"                             {BOLD}ACCIONES RÁPIDAS{RESET}")
+    print(f"{CYAN}==============================================================================={RESET}\n")
+    print(f"  ¿Necesitas {BOLD}INICIAR{RESET} el servidor en segundo plano?  -->  Presiona {CYAN}[1]{RESET}")
+    print(f"  ¿Necesitas {BOLD}DETENER{RESET} el servidor en segundo plano?  -->  Presiona {RED}[2]{RESET}")
+    print(f"  ¿Necesitas {BOLD}REINICIAR{RESET} el servidor (refrescar)?     -->  Presiona {YELLOW}[3]{RESET}")
+    print(f"  ¿Necesitas {BOLD}ABRIR{RESET} tu Panel Admin en Chrome?        -->  Presiona {GREEN}[4]{RESET}")
+    print(f"  ¿Necesitas {BOLD}ABRIR{RESET} el Portal Web de tus Colegas?    -->  Presiona {GREEN}[5]{RESET}")
+    print(f"  ¿Necesitas {BOLD}REFRESCAR{RESET} este panel de estado?        -->  Presiona [R]")
+    print(f"  ¿Deseas {BOLD}SALIR{RESET} del Centro de Control?              -->  Presiona [0]")
+    print(f"\n{CYAN}==============================================================================={RESET}")
 
 if __name__ == "__main__":
     print_dashboard()
