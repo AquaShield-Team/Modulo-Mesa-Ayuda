@@ -1,6 +1,7 @@
 @echo off
 title AQUASHIELD - Centro de Control y Monitor en Vivo
 color 0B
+mode con: cols=85 lines=32
 set "ROOT_DIR=c:\dev\Modulo-Mesa-Ayuda"
 cd /d "%ROOT_DIR%"
 
