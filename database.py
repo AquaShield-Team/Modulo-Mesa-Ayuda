@@ -267,6 +267,23 @@ def init_db():
         # Garantizar que marcelo.ramirez tenga rol de admin
         cursor.execute("UPDATE users SET role = 'admin' WHERE email = 'marcelo.ramirez@aquachile.com'")
 
+        # Precargar directorio de usuarios desde users.json si la tabla solo tiene al admin
+        cursor.execute("SELECT COUNT(*) FROM users")
+        if cursor.fetchone()[0] <= 2:
+            users_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "data", "users.json")
+            if os.path.exists(users_json_path):
+                import json
+                try:
+                    with open(users_json_path, "r", encoding="utf-8") as f:
+                        user_list = json.load(f)
+                    for u in user_list:
+                        cursor.execute("""
+                            INSERT OR IGNORE INTO users (name, email, department, role)
+                            VALUES (?, ?, ?, ?)
+                        """, (u.get("name"), u.get("email"), u.get("department", "Operaciones"), u.get("role", "usuario")))
+                except Exception:
+                    pass
+
         # Precargar módulos si está vacía
         cursor.execute("SELECT COUNT(*) FROM modules")
         count = cursor.fetchone()[0]
