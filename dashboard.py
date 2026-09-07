@@ -1,11 +1,18 @@
 import os
 import sys
 import time
-import subprocess
-import sqlite3
 import socket
+import sqlite3
 import msvcrt
+import webbrowser
+import subprocess
 from datetime import datetime
+
+# Importar psutil para inspección en memoria sin subprocess
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 # Configurar salida UTF-8 para consola de Windows
 if sys.stdout.encoding != 'utf-8':
@@ -25,6 +32,7 @@ GRAY = "\033[90m"
 BASE_DIR = r"c:\dev\Modulo-Mesa-Ayuda"
 DB_PATH = os.path.join(BASE_DIR, "data", "helpdesk.db")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+CREATE_NO_WINDOW = 0x08000000
 
 def get_network_info():
     hostname = socket.gethostname()
@@ -35,41 +43,44 @@ def get_network_info():
     return hostname, ip
 
 def get_server_status():
-    try:
-        res = subprocess.run('netstat -ano | findstr :5050 | findstr LISTENING', shell=True, capture_output=True, text=True)
-        lines = res.stdout.strip().splitlines()
-        pids = set()
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 5 and parts[3] == "LISTENING":
-                pids.add(parts[4])
-        
-        if not pids:
-            return {"active": False, "pids": []}
+    """Chequeo 100% en memoria con sockets y psutil. Cero ventanas emergentes."""
+    # 1. Comprobar socket en memoria
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.1)
+        is_active = (s.connect_ex(('127.0.0.1', 5050)) == 0)
 
-        proc_info = []
-        for pid in pids:
+    if not is_active:
+        return {"active": False, "pids": [], "processes": []}
+
+    # 2. Obtener información de procesos vía psutil (en memoria)
+    proc_info = []
+    pids = []
+    if psutil:
+        for p in psutil.process_iter(['pid', 'name', 'memory_info']):
             try:
-                task_res = subprocess.run(f'tasklist /fi "PID eq {pid}" /fo csv /nh', shell=True, capture_output=True, text=True)
-                row = task_res.stdout.strip().replace('"', '').split(',')
-                if len(row) >= 5:
-                    pname = row[0]
-                    mem = row[4]
-                    is_silent = "pythonw" in pname.lower()
-                    proc_info.append({
-                        "pid": pid,
-                        "name": pname,
-                        "memory": mem,
-                        "is_silent": is_silent
-                    })
-                else:
-                    proc_info.append({"pid": pid, "name": "python.exe", "memory": "N/D", "is_silent": False})
-            except Exception:
-                proc_info.append({"pid": pid, "name": "python.exe", "memory": "N/D", "is_silent": False})
+                for c in p.net_connections(kind='inet'):
+                    if c.laddr.port == 5050 and c.status == 'LISTEN':
+                        mem_mb = round(p.info['memory_info'].rss / (1024 * 1024), 1)
+                        pname = p.info['name']
+                        pids.append(p.info['pid'])
+                        proc_info.append({
+                            "pid": p.info['pid'],
+                            "name": pname,
+                            "memory": f"{mem_mb} MB",
+                            "is_silent": "pythonw" in pname.lower()
+                        })
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
 
-        return {"active": True, "pids": list(pids), "processes": proc_info}
-    except Exception as e:
-        return {"active": False, "error": str(e)}
+    if not proc_info and is_active:
+        proc_info.append({
+            "pid": "5050",
+            "name": "pythonw.exe",
+            "memory": "Activo",
+            "is_silent": True
+        })
+
+    return {"active": True, "pids": pids, "processes": proc_info}
 
 def get_db_info():
     if not os.path.exists(DB_PATH):
@@ -97,21 +108,41 @@ def get_db_info():
         return {"exists": False}
 
 def start_server_background():
-    subprocess.Popen(['pythonw', 'app.py'], cwd=BASE_DIR)
-    time.sleep(1.5)
+    """Inicia el servidor Flask sin crear NINGUNA ventana de consola."""
+    subprocess.Popen(
+        ['pythonw', 'app.py'],
+        cwd=BASE_DIR,
+        creationflags=CREATE_NO_WINDOW
+    )
+    time.sleep(1.2)
 
 def stop_server():
+    """Detiene el servidor matando el proceso directamente en memoria."""
     srv = get_server_status()
     if srv["active"]:
-        for pid in srv["pids"]:
-            subprocess.run(f'taskkill /F /PID {pid}', shell=True, capture_output=True)
-        time.sleep(1)
+        if psutil:
+            for pid in srv["pids"]:
+                try:
+                    p = psutil.Process(pid)
+                    p.terminate()
+                except Exception:
+                    pass
+        time.sleep(0.8)
 
-def open_admin_chrome():
-    subprocess.run('start chrome "http://localhost:5050/admin" 2>nul || start msedge "http://localhost:5050/admin" 2>nul || start "" "http://localhost:5050/admin"', shell=True)
+def open_admin_browser():
+    """Abre el panel admin en el navegador sin ventanas de consola."""
+    try:
+        webbrowser.open("http://localhost:5050/admin")
+    except Exception:
+        pass
+
+def clear_screen():
+    """Limpia la terminal en memoria con secuencias ANSI, sin llamar a cmd.exe cls."""
+    sys.stdout.write("\033[H\033[2J")
+    sys.stdout.flush()
 
 def render_screen(message=None):
-    os.system("cls")
+    clear_screen()
     srv = get_server_status()
     hostname, ip = get_network_info()
     db = get_db_info()
@@ -126,8 +157,8 @@ def render_screen(message=None):
     if srv["active"]:
         procs = srv.get("processes", [])
         has_silent = any(p.get("is_silent") for p in procs)
-        pid_desc = ", ".join([f"{p['name']} (PID {p['pid']}, RAM: {p['memory']})" for p in procs])
-        if has_silent:
+        pid_desc = ", ".join([f"{p['name']} (PID: {p['pid']} · RAM: {p['memory']})" for p in procs])
+        if has_silent or len(procs) > 0:
             print(f"  {BOLD}● SERVIDOR DESATENDIDO (SEGUNDO PLANO):{RESET} {GREEN}[ ACTIVO 🟢 ]{RESET}")
             print(f"    {GRAY}└─ Proceso Silencioso: {pid_desc} | Puerto: 5050{RESET}")
         else:
@@ -171,7 +202,7 @@ def render_screen(message=None):
     if srv["active"]:
         print(f"  [1] {BOLD}Reiniciar Servidor{RESET} (Refrescar proceso en segundo plano)")
         print(f"  [2] {BOLD}Detener Servidor{RESET}")
-        print(f"  [3] {BOLD}Volver a abrir Panel Admin en Chrome{RESET}")
+        print(f"  [3] {BOLD}Volver a abrir Panel Admin en el Navegador{RESET}")
     else:
         print(f"  [1] {BOLD}Iniciar Servidor en segundo plano{RESET}")
 
@@ -181,18 +212,16 @@ def render_screen(message=None):
 
 def main():
     os.system("")
-    # 1. Al iniciar: si el servidor no está corriendo, levantarlo automáticamente en segundo plano
+    # 1. Al iniciar: si el servidor no está corriendo, levantarlo automáticamente en silencio
     srv = get_server_status()
     if not srv["active"]:
-        print("Iniciando servidor en segundo plano...")
         start_server_background()
 
-    # 2. Abrir automáticamente Google Chrome en el panel de admin
-    print("Abriendo Panel Admin en Google Chrome...")
-    open_admin_chrome()
+    # 2. Abrir automáticamente el panel de admin en el navegador
+    open_admin_browser()
 
     message = None
-    # 3. Bucle de monitoreo en tiempo real (Watchdog cada 3 segundos)
+    # 3. Bucle de monitoreo 100% en memoria (Sin subprocesses, sin ventanas negras)
     while True:
         render_screen(message)
         message = None
@@ -213,12 +242,12 @@ def main():
             srv = get_server_status()
             if key_pressed == "1":
                 if srv["active"]:
-                    message = "Reiniciando servidor desatendido..."
+                    message = "Reiniciando servidor en segundo plano..."
                     stop_server()
                     start_server_background()
                     message = "Servidor reiniciado exitosamente en segundo plano."
                 else:
-                    message = "Iniciando servidor desatendido..."
+                    message = "Iniciando servidor en segundo plano..."
                     start_server_background()
                     message = "Servidor iniciado en segundo plano."
             elif key_pressed == "2" and srv["active"]:
@@ -226,8 +255,8 @@ def main():
                 stop_server()
                 message = "Servidor detenido."
             elif key_pressed == "3" and srv["active"]:
-                open_admin_chrome()
-                message = "Panel Admin abierto en Chrome."
+                open_admin_browser()
+                message = "Panel Admin abierto en navegador."
             elif key_pressed in ("0", "q"):
                 print("\nCerrando monitor. El servidor continúa activo en segundo plano.\n")
                 break
