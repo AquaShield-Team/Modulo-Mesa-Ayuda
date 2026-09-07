@@ -2789,13 +2789,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         btnSyncQueue.disabled = false;
         btnSyncQueue.innerHTML = `<span>🔄 Sincronizar Cola (<span id="queueBadgeCount">0</span>)</span>`;
-        checkQueueStatus();
       }
     });
   }
-
-  setInterval(checkQueueStatus, 30000);
-  checkQueueStatus();
 
   // ── Inicialización ───────────────────────────────────────────────────────
   if (adminSearchInput) {

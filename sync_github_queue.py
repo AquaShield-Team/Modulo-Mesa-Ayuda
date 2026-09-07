@@ -10,18 +10,37 @@ sys.path.insert(0, BASE_DIR)
 import database
 
 REPO = "AquaShield-Team/Modulo-Mesa-Ayuda"
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
-def fetch_pending_github_issues():
+_cached_issues = []
+_last_fetch_time = 0
+CACHE_DURATION = 15
+
+def fetch_pending_github_issues(force=False):
+    global _cached_issues, _last_fetch_time
+    import time
+    now = time.time()
+    if not force and (now - _last_fetch_time < CACHE_DURATION):
+        return _cached_issues
+
     try:
         cmd = ["gh", "issue", "list", "--repo", REPO, "--label", "en-espera", "--state", "open", "--json", "number,title,body,createdAt,author"]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        res = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            creationflags=CREATE_NO_WINDOW
+        )
         if res.returncode != 0:
             print(f"[ERROR] No se pudieron obtener issues de GitHub: {res.stderr}")
-            return []
-        return json.loads(res.stdout or "[]")
+            return _cached_issues
+        _cached_issues = json.loads(res.stdout or "[]")
+        _last_fetch_time = now
+        return _cached_issues
     except Exception as e:
         print(f"[ERROR] Excepcion al consultar issues: {e}")
-        return []
+        return _cached_issues
 
 def parse_ticket_from_issue_body(body):
     # Buscar bloque json embebido en ```json ... ```
@@ -115,7 +134,7 @@ def sync_github_queue_to_db(author="Sistema Sincronizador"):
                 "--repo", REPO,
                 "--comment", f"✅ Requerimiento sincronizado en Mesa de Ayuda con código **{tkt_code}**."
             ]
-            subprocess.run(close_cmd, capture_output=True, text=True)
+            subprocess.run(close_cmd, capture_output=True, text=True, creationflags=CREATE_NO_WINDOW)
 
             synced_tickets.append(created_ticket)
         except Exception as e:

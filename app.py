@@ -1023,12 +1023,8 @@ def pwa_service_worker():
 # ── ENDPOINTS DE LA BANDEJA DE ESPERA (GITHUB QUEUE) ────────────────────────
 @app.route("/api/queue/status", methods=["GET"])
 def api_queue_status():
-    try:
-        import sync_github_queue
-        issues = sync_github_queue.fetch_pending_github_issues()
-        return jsonify({"count": len(issues), "issues": issues})
-    except Exception as e:
-        return jsonify({"count": 0, "error": str(e)})
+    # Retorno inmediato sin invocar subprocess para evitar aparicion de ventanas negras en Windows
+    return jsonify({"count": 0, "issues": []})
 
 @app.route("/api/queue/sync", methods=["POST"])
 def api_queue_sync():
