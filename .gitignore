@@ -11,6 +11,7 @@ ENV/
 
 # Base de datos y adjuntos
 data/*.db
+!data/seed_helpdesk.db
 data/*.sqlite
 data/*.sqlite3
 uploads/*
