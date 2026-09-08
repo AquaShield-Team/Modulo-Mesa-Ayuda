@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mesa de Ayuda · AquaShield | AquaChile</title>
+  <script>
+    // Redirección transparente desde el portal estático al servidor oficial en la nube
+    if (window.location.hostname.includes("github.io")) {
+      window.location.replace("https://marcelo92.pythonanywhere.com/" + window.location.search);
+    }
+  </script>
   <link rel="icon" type="image/x-icon" href="static/favicon.ico">
   
   <!-- PWA Manifest y Meta Tags Móviles -->
