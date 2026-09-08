@@ -5,6 +5,7 @@ import zipfile
 import mimetypes
 import base64
 import uuid
+import subprocess
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, send_from_directory, abort, session
 from flask_cors import CORS
@@ -756,6 +757,72 @@ def admin_backup_endpoint():
             as_attachment=True,
             download_name=filename
         )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ── API: Actualización del Servidor en la Nube (1 Clic) ────────────────────
+
+@app.route("/api/admin/system/update", methods=["POST"])
+def admin_system_update_endpoint():
+    try:
+        # 1. Traer cambios desde GitHub sin tocar la BD ni uploads
+        fetch_res = subprocess.run(
+            ["git", "fetch", "origin", "main"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=35
+        )
+        if fetch_res.returncode != 0:
+            err_msg = (fetch_res.stderr or fetch_res.stdout or "Error de conexión con GitHub").strip()
+            return jsonify({"success": False, "error": err_msg}), 500
+
+        reset_res = subprocess.run(
+            ["git", "reset", "--hard", "origin/main"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=35
+        )
+        output = f"{(reset_res.stdout or '').strip()}\n{(reset_res.stderr or '').strip()}".strip()
+
+        # 2. Obtener resumen del último commit aplicado
+        log_res = subprocess.run(
+            ["git", "log", "-1", "--pretty=format:%h - %s (%cr)"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        commit_info = log_res.stdout.strip() if log_res.returncode == 0 else ""
+
+        # 3. Recargar WSGI en PythonAnywhere si corresponde (touch al archivo wsgi)
+        reloaded = False
+        wsgi_candidates = [
+            "/var/www/marcelo92_pythonanywhere_com_wsgi.py",
+        ]
+        if os.path.isdir("/var/www"):
+            for f in os.listdir("/var/www"):
+                if f.endswith("_wsgi.py"):
+                    full_p = os.path.join("/var/www", f)
+                    if full_p not in wsgi_candidates:
+                        wsgi_candidates.append(full_p)
+
+        for candidate in wsgi_candidates:
+            if os.path.exists(candidate):
+                try:
+                    os.utime(candidate, None)
+                    reloaded = True
+                except Exception as wsgi_err:
+                    output += f"\n(Aviso recarga WSGI: {wsgi_err})"
+
+        return jsonify({
+            "success": True,
+            "commit": commit_info,
+            "output": output or "Archivos sincronizados correctamente.",
+            "reloaded": reloaded,
+            "message": "¡Sistema actualizado y recargado con éxito!"
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

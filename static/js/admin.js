@@ -171,6 +171,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Botón Backup y Modal Analytics
   const btnDownloadBackup = document.getElementById("btnDownloadBackup");
+  const btnSystemUpdate = document.getElementById("btnSystemUpdate");
+  const modalSystemUpdate = document.getElementById("modalSystemUpdate");
+  const btnCloseSystemUpdateModal = document.getElementById("btnCloseSystemUpdateModal");
+  const btnCancelSystemUpdate = document.getElementById("btnCancelSystemUpdate");
+  const btnConfirmSystemUpdate = document.getElementById("btnConfirmSystemUpdate");
+  const btnSystemUpdateText = document.getElementById("btnSystemUpdateText");
+  const systemUpdateStatusArea = document.getElementById("systemUpdateStatusArea");
+
   const btnOpenAnalytics = document.getElementById("btnOpenAnalytics");
   const modalAnalyticsDashboard = document.getElementById("modalAnalyticsDashboard");
   const btnCloseAnalytics = document.getElementById("btnCloseAnalytics");
@@ -2266,6 +2274,88 @@ document.addEventListener("DOMContentLoaded", () => {
     btnDownloadBackup.addEventListener("click", () => {
       window.location.href = "/api/admin/backup";
     });
+  }
+
+  // ── 10.1 Actualización del Servidor desde GitHub (1 Clic) ─────────────────
+  if (btnSystemUpdate && modalSystemUpdate) {
+    btnSystemUpdate.addEventListener("click", () => {
+      if (systemUpdateStatusArea) {
+        systemUpdateStatusArea.style.display = "none";
+        systemUpdateStatusArea.innerHTML = "";
+      }
+      if (btnConfirmSystemUpdate) {
+        btnConfirmSystemUpdate.disabled = false;
+        if (btnSystemUpdateText) btnSystemUpdateText.textContent = "🔄 Actualizar Ahora";
+      }
+      modalSystemUpdate.classList.add("active");
+    });
+
+    const closeUpdateModal = () => {
+      modalSystemUpdate.classList.remove("active");
+    };
+
+    if (btnCloseSystemUpdateModal) btnCloseSystemUpdateModal.addEventListener("click", closeUpdateModal);
+    if (btnCancelSystemUpdate) btnCancelSystemUpdate.addEventListener("click", closeUpdateModal);
+
+    modalSystemUpdate.addEventListener("click", (e) => {
+      if (e.target === modalSystemUpdate) closeUpdateModal();
+    });
+
+    if (btnConfirmSystemUpdate) {
+      btnConfirmSystemUpdate.addEventListener("click", async () => {
+        btnConfirmSystemUpdate.disabled = true;
+        if (btnSystemUpdateText) btnSystemUpdateText.textContent = "⏳ Conectando con GitHub...";
+
+        if (systemUpdateStatusArea) {
+          systemUpdateStatusArea.style.display = "block";
+          systemUpdateStatusArea.style.color = "var(--text-primary)";
+          systemUpdateStatusArea.textContent = "📡 Descargando últimos cambios desde GitHub...\nPor favor espera unos segundos...";
+        }
+
+        try {
+          const res = await fetch("/api/admin/system/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            let msg = "✅ ¡Actualización completada con éxito!\n\n";
+            if (data.commit) {
+              msg += `📌 Versión: ${data.commit}\n`;
+            }
+            if (data.reloaded) {
+              msg += `🚀 Servidor PythonAnywhere recargado automáticamente.\n`;
+            }
+            msg += "\n🔄 Refrescando el panel en 3 segundos...";
+
+            if (systemUpdateStatusArea) {
+              systemUpdateStatusArea.textContent = msg;
+              systemUpdateStatusArea.style.color = "#16a34a";
+            }
+
+            if (btnSystemUpdateText) btnSystemUpdateText.textContent = "✅ ¡Listo!";
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          } else {
+            if (systemUpdateStatusArea) {
+              systemUpdateStatusArea.textContent = `❌ Error al actualizar:\n${data.error || data.output || "Error desconocido"}`;
+              systemUpdateStatusArea.style.color = "#dc2626";
+            }
+            btnConfirmSystemUpdate.disabled = false;
+            if (btnSystemUpdateText) btnSystemUpdateText.textContent = "🔄 Reintentar";
+          }
+        } catch (err) {
+          if (systemUpdateStatusArea) {
+            systemUpdateStatusArea.textContent = `❌ Error de conexión al actualizar:\n${err.message}`;
+            systemUpdateStatusArea.style.color = "#dc2626";
+          }
+          btnConfirmSystemUpdate.disabled = false;
+          if (btnSystemUpdateText) btnSystemUpdateText.textContent = "🔄 Reintentar";
+        }
+      });
+    }
   }
 
   // ── 11. Sistema de Auto-Refresco En Vivo ───────────────────────────────────

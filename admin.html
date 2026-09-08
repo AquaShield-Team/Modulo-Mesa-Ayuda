@@ -66,6 +66,9 @@
       <button type="button" id="btnDownloadBackup" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem;">
         <span>💾 Backup</span>
       </button>
+      <button type="button" id="btnSystemUpdate" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem; border-color: #0284c7; color: #0284c7;" title="Actualizar servidor con la última versión de GitHub">
+        <span>🚀 Actualizar Servidor</span>
+      </button>
       <button type="button" id="btnOpenEmailSettings" class="btn-secondary" style="padding: 6px 12px; font-size: 0.84rem;">
         <span>✉️ Servidor de Correo</span>
       </button>
@@ -954,6 +957,32 @@
       </div>
     </div>
     <div class="lightbox-body" id="lightboxBody"></div>
+  </div>
+
+  <!-- MODAL: ACTUALIZAR SISTEMA DESDE GITHUB -->
+  <div id="modalSystemUpdate" class="aq-modal-overlay">
+    <div class="aq-modal" style="max-width: 560px;">
+      <div class="aq-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🚀</span>
+          <h3 class="aq-card-title" style="font-size: 1.1rem; margin: 0;">Actualizar Servidor en la Nube</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseSystemUpdateModal">&times;</button>
+      </div>
+      <div class="aq-modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 12px; line-height: 1.5;">
+          Esta acción sincronizará el servidor con los últimos cambios subidos a <strong>GitHub</strong> y recargará la aplicación en vivo sin tocar tu base de datos de tickets ni los archivos adjuntos.
+        </p>
+        <div id="systemUpdateStatusArea" style="display: none; margin-top: 15px; padding: 14px; border-radius: var(--radius-md); font-size: 0.85rem; font-family: monospace; white-space: pre-wrap; background: var(--bg-card-secondary); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto;">
+        </div>
+      </div>
+      <div class="aq-modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelSystemUpdate">Cerrar</button>
+        <button type="button" class="btn-primary" id="btnConfirmSystemUpdate" style="background: #0284c7; border-color: #0284c7;">
+          <span id="btnSystemUpdateText">🔄 Actualizar Ahora</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- FOOTER -->
